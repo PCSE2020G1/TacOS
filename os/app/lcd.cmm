@@ -107,6 +107,6 @@ public void putLineH(int x, int y, int height){
 }
 
 //indexファイルにアクセスし、ファイルをソートしてディスプレイに表示する
-public void FilesSort(char* index_file, char[] list, char mode){
+public void FilesSort(int index_file, char[] list, char mode){
 
 }
