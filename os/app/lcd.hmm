@@ -34,4 +34,4 @@ public void cls();                         // 画面のクリア
 
 public void putLineW(int x, int y, int width);                      //横線の表示
 public void putLineH(int x, int y, int height);                     //縦線の表示
-public void FilesSort(char* index_file, char[] list, char mode);    //indexファイルにアクセスし、内容をソートして表示
+public void FilesSort(int index_file, char[] list, char mode);    //indexファイルにアクセスし、内容をソートして表示
