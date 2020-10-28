@@ -31,6 +31,11 @@
  *
  */
 
+ /*
+  *i14simizu 開発状況
+  *2020.10.28 : 各開発予定のクラスを追記
+ */
+
 #include "spi.hmm"
 #include "font.hmm"
 #include "lcd.hmm"
@@ -89,4 +94,19 @@ public void cls() {
       putCh(' ');
     }
   }
+}
+
+//ディスプレイに横線を表示する
+public void putLineW(int x, int y, int width){
+
+}
+
+//ディスプレイに縦線を表示する
+public void putLineH(int x, int y, int height){
+
+}
+
+//indexファイルにアクセスし、ファイルをソートしてディスプレイに表示する
+public void FilesSort(char* index_file, char[] list, char mode){
+
 }
