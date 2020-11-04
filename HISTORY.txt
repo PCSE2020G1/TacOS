@@ -1,4 +1,6 @@
 変更履歴
+2020.10.31         : i14simizu font.cmm実装完了、未デバッグ(画面上にうまく表示されるか不安) & lcd.cmmのcls_blockは必要？
+2020.10.30         : i14simizu lcd.cmmにてputLineW()とputLineH()を実装完了、未デバッグ
 2020.10.28         : i14simizu test & lcdに少し変更
 
 2020.10.14         : 総合実験で使用開始
