@@ -39,18 +39,31 @@
 #define FILE_SIZE 128 //オリジナルリストに含まれる曲の最大数
 
 //public char[][] index_file; 構造体宣言したから多分いらなくなった
-public char[][] list = array(10, 100); //サイズは適当
+public int[][] list = array(10, 100); //サイズは適当
 //list = {{1, 4, 5, 10}, {2, 3, 6}, {1, 2, 7, 8}};みたいなイメージ
 
 char[] list_file = array(FILE_SIZE); //リスト名を格納する一次変数
 
 
-public char[] ListCreateInt(){
+public void ListCreateInt(){
     FILE fp;
-    if(){
-
+    for(int t=1;t<=5;t=t+1){
+        strCpy(list_file, "list_");
+        strCat(list_file, chr(t+ord('0')));
+        strCat(list_file, ".csv");
+        if((fp=fopen(list_file, "r"))!=null){
+            //各行を処理する
+            int n = 0;
+            for(int i=0; fgets(str, N, fp)!=null; i=i+1){
+                //曲のidを取り出す
+                strCpy(str, deleteStr(str, n+1));
+                n = strChr(str, ',');
+                strNcpy(tmp_str, str, n+1);
+                list_file[t][i] = atoi(tmp_str);               
+            }
+            printf("%d\n", list[t]);
+        }
     }
-    return null;
 }
 
 
