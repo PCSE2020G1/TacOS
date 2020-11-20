@@ -29,18 +29,27 @@
  */
 
 #include <stdio.hmm>
+#include <stdlib.hmm>
+#include <string.hmm>
 #include <fs.hmm>
 #include <util.hmm>
 #include "appUtil.hmm"
 #include "mp3Files.hmm"
 
+#define FILE_SIZE 128 //オリジナルリストに含まれる曲の最大数
+
 //public char[][] index_file; 構造体宣言したから多分いらなくなった
 public char[][] list = array(10, 100); //サイズは適当
 //list = {{1, 4, 5, 10}, {2, 3, 6}, {1, 2, 7, 8}};みたいなイメージ
 
+char[] list_file = array(FILE_SIZE); //リスト名を格納する一次変数
+
 
 public char[] ListCreateInt(){
+    FILE fp;
+    if(){
 
+    }
     return null;
 }
 

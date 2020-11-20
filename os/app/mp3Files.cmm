@@ -36,15 +36,13 @@
 #include "mp3Files.hmm"
 #include "lcd.hmm"
 
-/*makeを通すために自分用に宣言．本来は使わない
+
 #define N 256 //indexファイルの1行の最大サイズ
 #define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
 #define MUSIC_NAME_SIZE 20 //曲名のサイズ
 #define ART_NAME_SIZE 20 //アーティスト名のサイズ
 
-char[] file_mp3 = array(15); //拡張子を付けたファイル名を格納する一次変数
-char[] artist_name = array(10); //アーティスト名を格納する一次変数
-
+/*//makeを通すために自分用に宣言．本来は使わない
 //indexファイルの中身を格納する構造体
 struct index_type{
     char[] music_name;
@@ -58,6 +56,9 @@ char[] str = array(N); //1行読み込む一時変数
 char[] tmp_str = array(10); //適当な一時変数
 index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する一時変数配列
 */
+
+char[] file_mp3 = array(15); //拡張子を付けたファイル名を格納する一次変数
+char[] artist_name = array(10); //アーティスト名を格納する一次変数
 
 
 //-----------------------------------------------------------------------------
