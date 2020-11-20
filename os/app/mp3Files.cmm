@@ -36,7 +36,7 @@
 #include "mp3Files.hmm"
 #include "lcd.hmm"
 
-
+/*makeを通すために自分用に宣言．本来は使わない
 #define N 256 //indexファイルの1行の最大サイズ
 #define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
 #define MUSIC_NAME_SIZE 20 //曲名のサイズ
@@ -57,6 +57,7 @@ struct index_type{
 char[] str = array(N); //1行読み込む一時変数
 char[] tmp_str = array(10); //適当な一時変数
 index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する一時変数配列
+*/
 
 
 //-----------------------------------------------------------------------------
