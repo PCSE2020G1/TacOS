@@ -119,8 +119,8 @@ public void shellMain() {
     } else if (num>0 && mp3FilesGetName(num)!=null) { // ファイルと対応するボタン
       demoScreen();                                 // 画面を初期化
       asta(num);                                    // 再生中の曲に印を表示
-      play(mp3FilesGetPath(num));                   // 再生開始
-      dbgPutStr(mp3FilesGetPath(num));
+      play(files[num]);                   // 再生開始
+      dbgPutStr(files[num]);
       dbgPutStr("\n");
     }
     sleep(10);                                      // 10ms に一度
