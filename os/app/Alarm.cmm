@@ -36,6 +36,7 @@
 #include "../util/util.hmm"
 #include "spi.hmm"
 #include "lcd.hmm"
+#include "shellProc.hmm"
 
 int alarmtime;                              //カウントダウンする時間を持つ
 boolean alarmflag = false;
