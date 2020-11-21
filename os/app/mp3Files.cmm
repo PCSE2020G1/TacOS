@@ -71,6 +71,8 @@ int numFile;                                        // ファイルの個数
 
 char[] mp3Dir = "/MP3"; //ディレクトリがどう構成されるか不明
 
+void TagsInit();
+
 // /MP3 ディレクトリからファイルの一覧を作る（初期化）
 public void mp3FilesInit() {
   int fd;                                           // ファイルディスクリプタ
