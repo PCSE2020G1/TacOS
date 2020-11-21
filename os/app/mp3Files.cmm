@@ -23,6 +23,7 @@
  * mp3Files.cmm : MP3ファイルの一覧
  *
  * 2020.09.16 : 新規作成
+ * 2020.11.20 : TagInit()追加
  *
  * $Id$
  *
@@ -52,11 +53,11 @@ struct index_type{
     int song_len;
 };
 
-char[] str = array(N); //1行読み込む一時変数
-char[] tmp_str = array(10); //適当な一時変数
 index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する一時変数配列
 */
 
+char[] str = array(N); //1行読み込む一時変数
+char[] tmp_str = array(10); //適当な一時変数
 char[] file_mp3 = array(15); //拡張子を付けたファイル名を格納する一次変数
 char[] artist_name = array(10); //アーティスト名を格納する一次変数
 
@@ -68,17 +69,9 @@ char[] artist_name = array(10); //アーティスト名を格納する一次変�
 public char[][] files = array(5, 15); //(ファイル数, ファイルの文字数) 1234567890.123
 int numFile;                                        // ファイルの個数
 
-char[] mp3Dir = "/MP3";
-//char[] path = array(18);                          // /MP3/12345678.123
+char[] mp3Dir = "/MP3"; //ディレクトリがどう構成されるか不明
 
-
-/* パスの概念がないから必要なさそう
-char[] fileToPath(char[] file) {
-  strCpy(path, mp3Dir);
-  strCat(path, "/");
-  strCat(path, fname);
-  return path;
-}*/
+void TagsInit();
 
 // /MP3 ディレクトリからファイルの一覧を作る（初期化）
 public void mp3FilesInit() {
@@ -94,6 +87,9 @@ public void mp3FilesInit() {
     i = i + 1;
   }
   numFile = i;
+
+  TagsInit();
+
   close(fd);
 }
 
@@ -104,21 +100,6 @@ public char[] mp3FilesGetName(int n) {
   }
   return null;
 }
-
-/* 必要なさそう
-// n 番目パス名を返す（1<=n && n<=5）
-public char[] mp3FilesGetPath(int n) {
-  if (1<=n && n<=numFile) {
-    return fnameToPath(fnames[n-1]);
-  }
-  return null;
-}*/
-
-/*
-//これいる？
-public tags mp3FilesGetTags(int n){
-
-}*/
 
 
 //str[]の要素前delete_size個分の要素を削除し、前に詰める関数

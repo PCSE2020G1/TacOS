@@ -50,7 +50,7 @@
 int sw0 = 0x00;                                     // 前回の状態(デバウンス前)
 int sw1 = 0x00;                                     // 前回の状態(デバウンス後)
 
-int readSw() {
+public int readSw() {
   int sw = ~in(0x18) & SWS;                         // スイッチを読み正論理に変換
   int swd = sw & sw0;                               // デバウンス
   int sw2 = (sw1 ^ swd) & swd;                      // 今回，新たに押されたSW
@@ -59,7 +59,7 @@ int readSw() {
   return sw2;
 }
 
-int swToNum(int sw) {
+public int swToNum(int sw) {
   int num = -1;
   if ((sw & SW6)!=0) {                              // 6 番のスイッチが押された
     num = 6;
