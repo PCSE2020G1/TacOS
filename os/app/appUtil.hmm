@@ -30,7 +30,7 @@
 // ディレクトリファイルのリード
 //-----------------------------------------------------------------------------
 // ディレクトリ構造体
-struct Dir {
+struct Dir_i {
     char[] name;
     int    attr;
     int    clst;
@@ -38,7 +38,7 @@ struct Dir {
 };
 
 // ディレクトリから拡張子を指定して１エントリー読み出す（EOF では null を返す）
-public Dir readDir(int fd, char[] ext);
+public Dir_i readDir_i(int fd, char[] ext);
 
 //-----------------------------------------------------------------------------
 // 文字列操作
@@ -46,3 +46,4 @@ public Dir readDir(int fd, char[] ext);
 public char[] strCat(char[] dst, char[] src);
 public int strCmp(char[] s1, char[] s2);
 public int strNcmp(char[] s1, char[] s2, int n);
+public int printf(char[] format, ...);
