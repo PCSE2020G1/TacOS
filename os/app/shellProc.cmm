@@ -50,7 +50,7 @@
 int sw0 = 0x00;                                     // 前回の状態(デバウンス前)
 int sw1 = 0x00;                                     // 前回の状態(デバウンス後)
 
-int readSw() {
+public int readSw() {
   int sw = ~in(0x18) & SWS;                         // スイッチを読み正論理に変換
   int swd = sw & sw0;                               // デバウンス
   int sw2 = (sw1 ^ swd) & swd;                      // 今回，新たに押されたSW
@@ -59,7 +59,7 @@ int readSw() {
   return sw2;
 }
 
-int swToNum(int sw) {
+public int swToNum(int sw) {
   int num = -1;
   if ((sw & SW6)!=0) {                              // 6 番のスイッチが押された
     num = 6;
@@ -76,7 +76,7 @@ int swToNum(int sw) {
   }
   return num;
 }
-      
+
 //-----------------------------------------------------------------------------
 // 画面表示
 //-----------------------------------------------------------------------------
@@ -119,8 +119,8 @@ public void shellMain() {
     } else if (num>0 && mp3FilesGetName(num)!=null) { // ファイルと対応するボタン
       demoScreen();                                 // 画面を初期化
       asta(num);                                    // 再生中の曲に印を表示
-      play(mp3FilesGetPath(num));                   // 再生開始
-      dbgPutStr(mp3FilesGetPath(num));
+      play(files[num]);                   // 再生開始
+      dbgPutStr(files[num]);
       dbgPutStr("\n");
     }
     sleep(10);                                      // 10ms に一度

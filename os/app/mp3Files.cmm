@@ -23,22 +23,53 @@
  * mp3Files.cmm : MP3ファイルの一覧
  *
  * 2020.09.16 : 新規作成
+ * 2020.11.20 : TagInit()追加
  *
  * $Id$
  *
  */
+#include <stdio.hmm>
+#include <stdlib.hmm>
+#include <string.hmm>
 #include <fs.hmm>
 #include <util.hmm>
 #include "appUtil.hmm"
 #include "mp3Files.hmm"
+#include "lcd.hmm"
+
+
+#define N 256 //indexファイルの1行の最大サイズ
+#define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
+#define MUSIC_NAME_SIZE 20 //曲名のサイズ
+#define ART_NAME_SIZE 20 //アーティスト名のサイズ
+
+/*//makeを通すために自分用に宣言．本来は使わない
+//indexファイルの中身を格納する構造体
+struct index_type{
+    char[] music_name;
+    int id;
+    int play_cnt;
+    char[] art_name;
+    int song_len;
+};
+
+index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する一時変数配列
+*/
+
+char[] str = array(N); //1行読み込む一時変数
+char[] tmp_str = array(10); //適当な一時変数
+char[] file_mp3 = array(15); //拡張子を付けたファイル名を格納する一次変数
+char[] artist_name = array(10); //アーティスト名を格納する一次変数
+
 
 //-----------------------------------------------------------------------------
 // MP3ファイルの一覧（ただし，最大５個）
 //-----------------------------------------------------------------------------
-// ５つのファイル名
-char[][] fnames = array(5, 13);                     // 12345678.123
+// ５つのファイル名 -> 後で上限をあげる
+public char[][] files = array(5, 15); //(ファイル数, ファイルの文字数) 1234567890.123
 int numFile;                                        // ファイルの個数
 
+<<<<<<< HEAD
 char[] mp3Dir = "/MP3";
 char[] path = array(18);                          // /MP3/12345678.123
 
@@ -49,6 +80,11 @@ char[] fnameToPath(char[] fname) {
   strCat(path, fname);
   return path;
 }
+=======
+char[] mp3Dir = "/MP3"; //ディレクトリがどう構成されるか不明
+
+void TagsInit();
+>>>>>>> origin/develop
 
 // /MP3 ディレクトリからファイルの一覧を作る（初期化）
 public void mp3FilesInit() {
@@ -56,28 +92,130 @@ public void mp3FilesInit() {
   if ((fd=open(mp3Dir, READ_MODE))<0) {
     panic("panic:can't open MP3 Dir");
   }
-  Dir dir;
+  Dir_i dir; //appUtil.hmmで宣言されている
+  //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
   int i = 0;
-  while (i<5 && (dir=readDir(fd, "MP3"))!=null) {   // 最大5つファイル名を読む
-    strCpy(fnames[i], dir.name);
+  while (i<5 && (dir=readDir_i(fd, "MP3"))!=null) {   // 最大5つファイル名を読む -> 後で変更
+    strCpy(files[i], dir.name); //ファイル名をfilesにコピー
     i = i + 1;
   }
   numFile = i;
+
+  TagsInit();
+
   close(fd);
 }
 
-// n 番目ファイル名を返す（1<=n && n<=5）
+// n 番目ファイル名を返す（1<=n && n<=5）-> 後で変更
 public char[] mp3FilesGetName(int n) {
   if (1<=n && n<=numFile) {
-    return fnames[n-1];
+    return files[n-1];
   }
   return null;
 }
 
-// n 番目パス名を返す（1<=n && n<=5）
-public char[] mp3FilesGetPath(int n) {
-  if (1<=n && n<=numFile) {
-    return fnameToPath(fnames[n-1]);
+
+//str[]の要素前delete_size個分の要素を削除し、前に詰める関数
+char[] deleteStr(char[] str, int delete_size){
+    int j = 0;
+    for(int i=delete_size; i<strLen(str); i=i+1){
+        str[j] = str[i];
+        j = j+1;
+    }
+    return str;
+}
+
+
+void TagsInit(){ 
+  file_mp3 = malloc(sizeof(char)*15);
+  artist_name = malloc(sizeof(char)*10);
+  int play_time = 0; //エラー文を出さないための一時変数．後で変更
+
+  //構造体リストの動的確保
+  for(int i=0; i<INDEX_SIZE; i=i+1){
+      index_list[i] = malloc(sizeof(index_type));
   }
-  return null;
+  //構造体の中身の配列動的確保
+  for(int i=0; i<INDEX_SIZE; i=i+1){
+      index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
+      index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
+  }
+
+  FILE fp;
+  int n = 0; //","が現れる位置を格納する一時変数
+
+  if((fp = fopen("index.csv", "r"))!=null){ //csvファイルが存在していたら
+    str = malloc(sizeof(char)*N);
+    tmp_str = malloc(sizeof(char)*10);
+
+    //最初の行は空読み
+    fgets(str, N, fp);
+
+    //各行を処理する
+    for(int i=0; fgets(str, N, fp)!=null; i=i+1){
+        //曲名を取り出す
+        n = strChr(str, ','); //strChr() : 第一引数の中の何番目に第二引数の文字が存在するかを返す.
+        strNcpy(index_list[i].music_name, str, n+1);
+
+        //idを取り出す
+        //曲名分の長さをstrから削除し、残りの要素を前に詰める
+        strCpy(str, deleteStr(str, n+1));
+        n = strChr(str, ',');
+        strNcpy(tmp_str, str, n+1);
+        index_list[i].id = atoi(tmp_str);
+        
+        //再生回数を取り出す
+        strCpy(str, deleteStr(str, n+1));
+        n = strChr(str, ',');
+        strNcpy(tmp_str, str, n+1);
+        index_list[i].play_cnt = atoi(tmp_str);
+
+        //アーティスト名を取り出す
+        strCpy(str, deleteStr(str, n+1));
+        n = strChr(str, ',');
+        strNcpy(index_list[i].art_name, str, n+1);
+
+        //曲の長さを取り出す
+        strCpy(str, deleteStr(str, n+1));
+        strNcpy(tmp_str, str, strLen(str));
+        index_list[i].song_len = atoi(tmp_str);
+
+        printf("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
+        
+    }
+    free(tmp_str);
+    free(str);
+
+  } else{ //csvファイルが無かったら(初期起動)
+    for(int i=0;i<numFile;i=i+1){
+      index_list[i].music_name = files[i];
+      strCpy(file_mp3, files[i]);
+      strCat(file_mp3, ".mp3");
+      printf("%s\n", file_mp3);
+      fp = fopen(file_mp3, "r");
+      if (fp==null) {
+        panic("panic:can't open MP3 File");
+      }
+      //...フレーム取得...//
+      //...再生時間算出...//
+      //...タグ情報取得...//
+      index_list[i].song_len = play_time;
+      index_list[i].art_name = artist_name;
+      index_list[i].id = i;
+
+      fclose(fp);
+    }
+  }
+  free(file_mp3);
+  free(artist_name);
+
+  //構造体の中の要素について全要素開放
+  /*for(int i=0; i<INDEX_SIZE; i=i+1){ //電源を切るときに実行
+      free(index_list[i].music_name);
+      free(index_list[i].art_name);
+  }
+  //構造体配列の領域を開放
+  for(int i=0; i<INDEX_SIZE; i=i+1){
+      free(index_list[i]);
+  }*/
 }
