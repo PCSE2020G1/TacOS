@@ -33,12 +33,18 @@
 
  /*
   *i14simizu 開発状況
+  *2020.11.19 : FilesSort()関数の構造体・ソート部分まで完了
+  *2020.11.18 : deleteStr()関数追記、FilesSort()関数追記中
   *2020.10.28 : 各開発予定のクラスを追記
   *2020.10.30 : putLineW()とputLineH()の関数を実装
   *2020.10.31 : cls_block()の関数を追記(形だけ)
   *2020.11.01 : cls_block()の関数を追記
  */
 
+#include <stdio.hmm>
+#include <stdlib.hmm>
+#include <string.hmm>
+#include <ctype.hmm>
 #include "spi.hmm"
 #include "font.hmm"
 #include "lcd.hmm"
@@ -47,6 +53,7 @@ char[] locateCom = { '\xb0',   // page address
                      '\x10',   // column address Hi = 0x00
                      '\x00',   // column address Lo = 0x00
                      '\xff' }; // EOF
+
 
 // 液晶上でカーソルを(x,y)に移動
 public void locateXY(int x, int y) {
@@ -128,6 +135,82 @@ public void putLineH(int x, int y, int height){
 }
 
 //indexファイルにアクセスし、ファイルをソートしてディスプレイに表示する
-public void FilesSort(int index_file, char[] list, char mode){
-
+public void FilesSort(int mode){
+  //modeの値に合わせてソートのモードを変更する
+  //0 : 曲名(昇順)            1 : 曲名(降順)
+  //2 : アーティスト名(昇順)  3 : アーティスト名(降順)
+  //4 : 再生回数(昇順)        5 : 再生回数(降順)
+  //c--にはswitch文がないので、if-elseで処理する
+  //バブルソートで行けるんじゃね
+  index_type tmp;
+  if(mode==0){
+    //昇順曲名ソート
+    for(int i=0; i<INDEX_SIZE-1; i=i+1){
+      for(int j=INDEX_SIZE-1; j>i; j=j-1){
+        if(strCmp(index_list[j].music_name, index_list[j-1].music_name)<0){
+          tmp = index_list[j];
+          index_list[j] = index_list[j-1];
+          index_list[j-1] = tmp;
+        }
+      }
+    }
+  } else if(mode==1){
+    //降順曲名ソート
+    for(int i=0; i<INDEX_SIZE-1; i=i+1){
+      for(int j=INDEX_SIZE-1; j>i; j=j-1){
+        if(strCmp(index_list[j].music_name, index_list[j-1].music_name)>0){
+          tmp = index_list[j];
+          index_list[j] = index_list[j-1];
+          index_list[j-1] = tmp;
+        }
+      }
+    }
+  } else if(mode==2){
+    //昇順アーティスト名ソート
+    for(int i=0; i<INDEX_SIZE-1; i=i+1){
+      for(int j=INDEX_SIZE-1; j>i; j=j-1){
+        if(strCmp(index_list[j].art_name, index_list[j-1].art_name)<0){
+          tmp = index_list[j];
+          index_list[j] = index_list[j-1];
+          index_list[j-1] = tmp;
+        }
+      }
+    }
+  } else if(mode==3){
+    //降順アーティスト名ソート
+    for(int i=0; i<INDEX_SIZE-1; i=i+1){
+      for(int j=INDEX_SIZE-1; j>i; j=j-1){
+        if(strCmp(index_list[j].art_name, index_list[j-1].art_name)>0){
+          tmp = index_list[j];
+          index_list[j] = index_list[j-1];
+          index_list[j-1] = tmp;
+        }
+      }
+    }
+  } else if(mode==4){
+    //昇順再生回数ソート
+    for(int i=0; i<INDEX_SIZE-1; i=i+1){
+      for(int j=INDEX_SIZE-1; j>i; j=j-1){
+        if(index_list[j].play_cnt>index_list[j-1].play_cnt){
+          tmp = index_list[j];
+          index_list[j] = index_list[j-1];
+          index_list[j-1] = tmp;
+        }
+      }
+    }
+  } else if(mode==5){
+    //降順再生回数ソート
+    for(int i=0; i<INDEX_SIZE-1; i=i+1){
+      for(int j=INDEX_SIZE-1; j>i; j=j-1){
+        if(index_list[j].play_cnt<index_list[j-1].play_cnt){
+          tmp = index_list[j];
+          index_list[j] = index_list[j-1];
+          index_list[j-1] = tmp;
+        }
+      }
+    }
+  } else{
+    //modeの値が間違えているエラー
+    return; //コマンド待ちに戻る
+  }
 }
