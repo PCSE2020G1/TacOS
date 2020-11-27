@@ -49,6 +49,7 @@ boolean alarmflag = false;
 // レスポンス
 #define OK  0
 #define ERR 1
+#define N 256
 
 //1秒タイマー
 public void timer1s(){
@@ -146,6 +147,17 @@ public boolean alarm(){
 
 //曲名リストをlcdへ
   int i=1;
+  char[] filename1 = array(N);
+  char[] filename2 = array(N);
+  char[] filename3 = array(N);
+  char[] mu_path = array(N);
+  char[] music_path = array(N);
+  filename1 = malloc(sizeof(char)*N);
+  filename2 = malloc(sizeof(char)*N);
+  filename3 = malloc(sizeof(char)*N);
+  mu_path = malloc(sizeof(char)*N);
+  music_path = malloc(sizeof(char)*N);
+  FilesSort(0);       //mode0
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
@@ -159,26 +171,47 @@ public boolean alarm(){
       configtime();
       break;
     }
-    char[] filename1 = mp3FilesGetName(i);
-    if(filename1!=null){
+    strCpy(index_file[i].music_name, filename1);
+    if(filename1!=null){         //曲名が存在するか
       locateXY(1,1);
       if(strLen(filename1)!<18){  //文字数*2で返ってくる
         putStr(filename1);
       }
-      filename1[]
-      putStr(filename1);
+      else(){
+        filename1[8]='…';   //9文字目を「・・・」,10文字目を「¥0」
+        filename1[9]='¥0';
+        putStr(filename1);
+      }
+
     }
-    char[] filename2 = mp3FilesGetName(i+1);
+    strCpy(index_file[i+1].music_name, filename2);
     if(filename2!=null){
       locateXY(2,1);
-      putStr(filename2);
+      if(strLen(filename2)!<18){  //文字数*2で返ってくる
+        putStr(filename2);
+      }
+      else(){
+        filename2[8]='…';   //9文字目を「・・・」,10文字目を「¥0」
+        filename2[9]='¥0';
+        putStr(filename2);
+      }
     }
-    char[] filename3 = mp3FilesGetName(i+2);
+    strCpy(index_file[i+2].music_name, filename3);
     if(filename3!=null){
       locateXY(3,1);
-      putStr(filename3);
+      if(strLen(filename3)!<18){  //文字数*2で返ってくる
+        putStr(filename3);
+      }
+      else(){
+        filename3[8]='…';   //9文字目を「・・・」,10文字目を「¥0」
+        filename3[9]='¥0';
+        putStr(filename3);
+      }
     }
-  }        //9文字目以降[・・・]にする
+  free(filename1);
+  free(filename2);
+  free(filename3);
+  }
 
 
   for(;;){
@@ -190,9 +223,15 @@ public boolean alarm(){
       alarmflag = false;
     } else {
       music=1;
-      play(mp3FilesGetPath);
+      char[] path_head = "./MP3/";
+      char[] path_tail = ".mp3";
+      mu_path = subCat(path_head,filename1);
+      music_path = subCat(mu_path,path_tail);
+      play(music_path);
     }
   }
+  free(music_path);
+  free(mu_path);
 }
 
 //alarmが呼ばれて

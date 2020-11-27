@@ -126,7 +126,7 @@ char[] deleteStr(char[] str, int delete_size){
 }
 
 
-void TagsInit(){ 
+void TagsInit(){
   file_mp3 = malloc(sizeof(char)*15);
   artist_name = malloc(sizeof(char)*10);
   int play_time = 0; //エラー文を出さないための一時変数．後で変更
@@ -163,7 +163,7 @@ void TagsInit(){
         n = strChr(str, ',');
         strNcpy(tmp_str, str, n+1);
         index_list[i].id = atoi(tmp_str);
-        
+
         //再生回数を取り出す
         strCpy(str, deleteStr(str, n+1));
         n = strChr(str, ',');
@@ -181,7 +181,7 @@ void TagsInit(){
         index_list[i].song_len = atoi(tmp_str);
 
         printf("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
-        
+
     }
     free(tmp_str);
     free(str);
