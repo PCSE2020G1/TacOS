@@ -65,7 +65,8 @@ int[][] bit_rate_table_2 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-int[][] sample_rate = {{44100, 22050, 11025}, {48000, 24000, 12000}, {32000, 16000, 8000}, {0, 0, 0}};
+int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 0}}; //int型は16bit(signed)なので、下二桁を落とす
+//int[][] sample_rate = {{44100, 22050, 11025}, {48000, 24000, 12000}, {32000, 16000, 8000}, {0, 0, 0}};
 
 char[] bin_tmp_1, bin_tmp_2 = array(10);
 char[] b = array(5);
@@ -144,7 +145,7 @@ void subCpy(char[] target, char[] ori, int index, int n){
 
 
 //appUtil.cmmにあるstrCatを使うとうまく動かなかったので自作
-char[] subCat(char[] cat_s, char[] src){
+public char[] subCat(char[] cat_s, char[] src){
   char[] s = malloc(sizeof(char)*128);
   int c_num = strLen(cat_s);
   int s_num = strLen(src);
@@ -157,6 +158,10 @@ char[] subCat(char[] cat_s, char[] src){
   free(s);
   return s;
 }
+
+
+int[] a = {20000};
+int[] aa = {23456, 7890};
 
 
 void TagsInit(){
@@ -415,6 +420,7 @@ void TagsInit(){
           read(fp, buf, 1);
           printF("c=%d", buf[0]);
           printF("\n\n\n");
+          break;
         }
         free(b);
         free(bin_tmp_1);
