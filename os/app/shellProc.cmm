@@ -94,6 +94,17 @@ void demoScreen() {
   putStr("6:stop");                                 // 6番のスイッチ
 }
 
+void testDisplay(){
+  cls();
+  locateXY(0,0);
+  //記号を呼び出す方法
+  putCh(chr(0x8a));
+  locateXY(0,1);
+  putCh(chr(0x8b));
+  locateXY(0,2);
+  putCh(chr(0x8c));
+}
+
 void asta(int y) {
   demoScreen();
   locateXY(0, y+1);

@@ -119,18 +119,17 @@ public void cls_block(int x, int y, int width, int height){
 
 //ディスプレイに横線を表示する
 public void putLineW(int x, int y, int width){
-  locateXY(x,y);
   for (int i=0; i<width; i=i+1) {
+    locateXY(x+i,y);
     putCh('-');
   }
 }
 
 //ディスプレイに縦線を表示する
 public void putLineH(int x, int y, int height){
-  locateXY(x,y);
   for (int i=0; i<height; i=i+1) {
-    putCh('|');
     locateXY(x,y+i);
+    putCh(chr(0x7c));
   }
 }
 
