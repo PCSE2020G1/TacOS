@@ -23,61 +23,137 @@
  * mp3Files.cmm : MP3ファイルの一覧
  *
  * 2020.09.16 : 新規作成
+ * 2020.11.20 : TagInit()追加
+ * 2020.11.25 : TaCOSに適したものに修正(ファイルの中身を読み出すところまで)
  *
  * $Id$
  *
  */
+
 #include <fs.hmm>
 #include <util.hmm>
+#include <mm.hmm>
 #include "appUtil.hmm"
 #include "mp3Files.hmm"
+#include "lcd.hmm"
+
+
+#define N 256 //indexファイルの1行の最大サイズ
+#define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
+#define MUSIC_NAME_SIZE 20 //曲名のサイズ
+#define ART_NAME_SIZE 20 //アーティスト名のサイズ
+
+
+char[] str = array(N); //1行読み込む一時変数
+char[] tmp_str = array(10); //適当な一時変数
+char[] file_mp3 = array(15); //拡張子を付けたファイル名を格納する一次変数
+char[] artist_name = array(10); //アーティスト名を格納する一次変数
+
+char[] buf = array(32);
+
 
 //-----------------------------------------------------------------------------
 // MP3ファイルの一覧（ただし，最大５個）
 //-----------------------------------------------------------------------------
-// ５つのファイル名
-char[][] fnames = array(5, 13);                     // 12345678.123
-int numFile;                                        // ファイルの個数
 
-char[] mp3Dir = "/MP3";
-char[] path = array(18);                          // /MP3/12345678.123
+// ５つのファイル名 -> 後で上限をあげる
+public char[][] files = array(5, 15); //(ファイル数, ファイルの文字数) 1234567890.123
+public int numFile;                                        // ファイルの個数
 
+char[] mp3Dir = "/MP3"; //ディレクトリがどう構成されるか不明
 
-char[] fnameToPath(char[] fname) {
-  strCpy(path, mp3Dir);
-  strCat(path, "/");
-  strCat(path, fname);
-  return path;
-}
+void TagsInit();
+
 
 // /MP3 ディレクトリからファイルの一覧を作る（初期化）
 public void mp3FilesInit() {
   int fd;                                           // ファイルディスクリプタ
   if ((fd=open(mp3Dir, READ_MODE))<0) {
-    panic("panic:can't open MP3 Dir");
+    panic("panic1:can't open MP3 Dir debug");
   }
-  Dir dir;
+  Dir_i dir; //appUtil.hmmで宣言されている
+  //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
   int i = 0;
-  while (i<5 && (dir=readDir(fd, "MP3"))!=null) {   // 最大5つファイル名を読む
-    strCpy(fnames[i], dir.name);
+  while (i<5 && (dir=readDir_i(fd, "MP3"))!=null) {   // 最大5つファイル名を読む -> 後で変更
+    strCpy(files[i], dir.name); //ファイル名をfilesにコピー
     i = i + 1;
   }
   numFile = i;
+
+  TagsInit();
+
   close(fd);
 }
 
-// n 番目ファイル名を返す（1<=n && n<=5）
+// n 番目ファイル名を返す（1<=n && n<=5）-> 後で変更
 public char[] mp3FilesGetName(int n) {
   if (1<=n && n<=numFile) {
-    return fnames[n-1];
+    return files[n-1];
   }
   return null;
 }
 
-// n 番目パス名を返す（1<=n && n<=5）
-public char[] mp3FilesGetPath(int n) {
-  if (1<=n && n<=numFile) {
-    return fnameToPath(fnames[n-1]);
+
+//str[]の要素前delete_size個分の要素を削除し、前に詰める関数
+char[] deleteStr(char[] str, int delete_size){
+    int j = 0;
+    for(int i=delete_size; i<strLen(str); i=i+1){
+        str[j] = str[i];
+        j = j+1;
+    }
+    return str;
+}
+
+
+//appUtil.cmmにあるstrCatを使うとうまく動かなかったので自作
+char[] subCat(char[] cat_s, char[] src){
+  char[] s = malloc(sizeof(char)*128);
+  int c_num = strLen(cat_s);
+  int s_num = strLen(src);
+  strCpy(s, cat_s);
+  int index;
+  for(index=0; index<s_num;index=index+1){
+    s[c_num+index] = src[index];
   }
-  return null;
+  s[c_num+index] = '\0';
+  free(s);
+  return s;
+}
+
+
+void TagsInit(){
+  char c;
+  int fp;
+  //構造体リストの動的確保
+  for(int i=0; i<INDEX_SIZE; i=i+1){
+      index_list[i] = malloc(sizeof(index_type));
+  }
+  //構造体の中身の配列動的確保
+  for(int i=0; i<INDEX_SIZE; i=i+1){
+      index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
+      index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
+  }
+  for(int i=0;i<numFile;i=i+1){
+    char[] d = "./MP3/"; //パス指定
+    dbgPutStr("start\n");
+    index_list[i].music_name = files[i];
+    file_mp3 = subCat(d, files[i]); //strCatと同じ動き
+    dbgPutStr(file_mp3);
+    dbgPutStr("\n");
+
+    if ((fp=open(file_mp3, READ_MODE))<0) {
+      panic("panic2:can't open MP3 files");
+    }
+    if((read(fp, buf, 32))==32){
+      printF("%x\n", buf); //ID3(%s), 6e18(%x)が出力された
+    }
+    //...フレーム取得...//
+    //...再生時間算出...//
+    //...タグ情報取得...//
+    //index_list[i].song_len = play_time;
+    //index_list[i].art_name = artist_name;
+    //index_list[i].id = i;
+
+    close(fp);
+  }
 }
