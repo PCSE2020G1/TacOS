@@ -94,6 +94,18 @@ void demoScreen() {
   putStr("6:stop");                                 // 6番のスイッチ
 }
 
+void testDisplay(){
+  cls();
+  locateXY(0,0);
+  putCh(chr(0x82));
+  locateXY(0,1);
+  putCh(chr(0x83));
+  locateXY(0,2);
+  putCh(chr(0x84));
+  locateXY(0,3);
+  putCh(chr(0x85));
+}
+
 void asta(int y) {
   demoScreen();
   locateXY(0, y+1);
@@ -108,6 +120,11 @@ public void shellMain() {
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
   mp3FilesInit();                                   // ファイル一覧を作る
+  testDisplay();
+  for(;;){
+    ; //空文
+  }
+  /*
   demoScreen();                                     // 画面を初期化
   for (;;) {
     int sw = readSw();
@@ -125,4 +142,5 @@ public void shellMain() {
     }
     sleep(10);                                      // 10ms に一度
   }
+  */
 }
