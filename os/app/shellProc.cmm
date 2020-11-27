@@ -97,13 +97,12 @@ void demoScreen() {
 void testDisplay(){
   cls();
   locateXY(0,0);
-  putCh(chr(0x82));
+  //記号を呼び出す方法
+  putCh(chr(0x8a));
   locateXY(0,1);
-  putCh(chr(0x83));
+  putCh(chr(0x8b));
   locateXY(0,2);
-  putCh(chr(0x84));
-  locateXY(0,3);
-  putCh(chr(0x85));
+  putCh(chr(0x8c));
 }
 
 void asta(int y) {
@@ -120,11 +119,6 @@ public void shellMain() {
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
   mp3FilesInit();                                   // ファイル一覧を作る
-  testDisplay();
-  for(;;){
-    ; //空文
-  }
-  /*
   demoScreen();                                     // 画面を初期化
   for (;;) {
     int sw = readSw();
@@ -142,5 +136,4 @@ public void shellMain() {
     }
     sleep(10);                                      // 10ms に一度
   }
-  */
 }
