@@ -25,6 +25,7 @@
  * 2020.09.16 : 新規作成
  * 2020.11.20 : filesをpublic化
  * 2020.11.25 : numFileをpublic化
+ * 2020.11.27 : subCatをpublic化
  *
  * $Id$
  *
@@ -35,4 +36,5 @@ public int numFile;
 
 public void mp3FilesInit();               // 初期化（ファイル一覧を作る）
 public char[] mp3FilesGetName(int n);     // n 番目ファイル名を返す
+public char[] subCat(char[] cat_s, char[] src);
 //public char[] mp3FilesGetPath(int n);     // n 番目パス名を返す
