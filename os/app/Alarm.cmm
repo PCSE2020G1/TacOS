@@ -42,22 +42,21 @@
 // レスポンス
 #define OK  0
 #define ERR 1
-#define N 256
+#define N 25
+#define M 30
 
 int alarmtime;                              //カウントダウンする時間を持つ
 char[] filename1 = array(N);
 char[] filename2 = array(N);
 char[] filename3 = array(N);
-char[] mu_path = array(N);
-char[] music_path = array(N);
+char[] mu_path = array(M);
+char[] music_path = array(M);
 int minute = 0;
 int second = 0;
 int set = 1;              //1=minute,2=second
 int music = 0;            //0=無音,1=有音
 boolean alarmflag = false;
 //アラーム機能がオンになっているか．戻り値0でアラーム実行,戻り値1で何かしらの理由でアラームが解除されたこと示す
-
-
 
 //1秒タイマー
 public void timer1s(){
@@ -76,7 +75,7 @@ public void timer1s(){
     }
   }
 }
-public void timelcd(){    //int→str(lcd表示)
+public void timelcd(){
   cls_block(3,3,5,1);
   locateXY(3,3);
   putDec(minute,2);
@@ -158,8 +157,8 @@ public boolean alarm(){
   filename1 = malloc(sizeof(char)*N);
   filename2 = malloc(sizeof(char)*N);
   filename3 = malloc(sizeof(char)*N);
-  mu_path = malloc(sizeof(char)*N);
-  music_path = malloc(sizeof(char)*N);
+  mu_path = malloc(sizeof(char)*M);
+  music_path = malloc(sizeof(char)*M);
   FilesSort(0);       //mode0
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
@@ -216,7 +215,6 @@ public boolean alarm(){
   free(filename3);
   }
 
-
   for(;;){
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
@@ -226,10 +224,8 @@ public boolean alarm(){
       alarmflag = false;
     } else {
       music=1;
-      char[] path_head = "./MP3/";
-      char[] path_tail = ".mp3";
-//      mu_path = subCat(path_head,filename1);
-//      music_path = subCat(mu_path,path_tail);
+      mu_path = subCat("./MP3/",filename1);
+      music_path = subCat(mu_path,".mp3");
       play(music_path);
     }
   }
