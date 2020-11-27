@@ -1,5 +1,3 @@
-Alarm.cmm
-
 /*
  * TacOS Source Code
  *    Tokuyama kousen Advanced educational Computer.
@@ -39,8 +37,19 @@ Alarm.cmm
 #include "spi.hmm"
 #include "lcd.hmm"
 #include "shellProc.hmm"
+#include <mm.hmm>
+
+// レスポンス
+#define OK  0
+#define ERR 1
+#define N 256
 
 int alarmtime;                              //カウントダウンする時間を持つ
+char[] filename1 = array(N);
+char[] filename2 = array(N);
+char[] filename3 = array(N);
+char[] mu_path = array(N);
+char[] music_path = array(N);
 int minute = 0;
 int second = 0;
 int set = 1;              //1=minute,2=second
@@ -48,10 +57,7 @@ int music = 0;            //0=無音,1=有音
 boolean alarmflag = false;
 //アラーム機能がオンになっているか．戻り値0でアラーム実行,戻り値1で何かしらの理由でアラームが解除されたこと示す
 
-// レスポンス
-#define OK  0
-#define ERR 1
-#define N 256
+
 
 //1秒タイマー
 public void timer1s(){
@@ -65,7 +71,7 @@ public void timer1s(){
       minute=minute-1;
       second=59;
     }//lcdのカウントを下げる
-    elseif(minute=0 && second=0){
+    else if(minute==0 && second==0){
       break;
     }
   }
@@ -91,7 +97,7 @@ public void configtime(){    //時間入力画面をlcdへ
   locateXY(3,3);
   putDec(minute,2);
   locateXY(3,5);
-  putStr(':');
+  putCh(':');
   locateXY(3,6);
   putDec(second,2);
   locateXY(3,9);
@@ -104,25 +110,25 @@ public void configtime(){    //時間入力画面をlcdへ
       minute=minute+1;
       timelcd();
     }
-    elseif(set==1 && num==5 ){  //下なら
+    else if(set==1 && num==5 ){  //下なら
       minute=minute-1;
       timelcd();
     }
-    elseif(set==2 && num==1 ){   //上なら
+    else if(set==2 && num==1 ){   //上なら
       second=second+1;
       timelcd();
     }
-    elseif(set==2 && num==5 ){   //下なら
+    else if(set==2 && num==5 ){   //下なら
       second=second-1;
       timelcd();
     }
-    elseif(set==1 && num==3 ){   //min右
+    else if(set==1 && num==3 ){   //min右
       set=2;
     }
-    elseif(set==2 && num==2 ){   //sec左
+    else if(set==2 && num==2 ){   //sec左
       set=1;
     }
-    elseif(set==2 && num==3 ){   //sec右
+    else if(set==2 && num==3 ){   //sec右
       break;                  //時間確定
     }
   }
@@ -141,7 +147,7 @@ public boolean alarm(){
   putLineH(0,10,8);
   putLineH(0,11,8);
   locateXY(4,1);
-  putCh('↓');
+  putCh('=');
   locateXY(6,1);
   putStr("-select");
   locateXY(7,4);
@@ -149,11 +155,6 @@ public boolean alarm(){
 
 //曲名リストをlcdへ
   int i=1;
-  char[] filename1 = array(N);
-  char[] filename2 = array(N);
-  char[] filename3 = array(N);
-  char[] mu_path = array(N);
-  char[] music_path = array(N);
   filename1 = malloc(sizeof(char)*N);
   filename2 = malloc(sizeof(char)*N);
   filename3 = malloc(sizeof(char)*N);
@@ -163,50 +164,50 @@ public boolean alarm(){
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
-    if(i!=numfile && num==5 ){               //下ボタン
+    if(i!=numFile && num==5 ){               //下ボタン
       i=i+1;
     }
-    elseif(i!=0 && num==1){           //上ボタン
+    else if(i!=0 && num==1){           //上ボタン
       i=i-1;
     }
-    elseif(num==3){              //曲を選択したら
+    else if(num==3){              //曲を選択したら
       configtime();
       break;
     }
-    strCpy(index_file[i].music_name, filename1);
+    strCpy(index_list[i].music_name, filename1);
     if(filename1!=null){         //曲名が存在するか
       locateXY(1,1);
-      if(strLen(filename1)!<18){  //文字数*2で返ってくる
+      if(strLen(filename1)>=18){  //文字数*2で返ってくる
         putStr(filename1);
       }
-      else(){
-        filename1[8]='…';   //9文字目を「・・・」,10文字目を「¥0」
-        filename1[9]='¥0';
+      else{
+        filename1[8]='*';   //9文字目を「・・・」,10文字目を「¥0」
+        filename1[9]='\0';
         putStr(filename1);
       }
 
     }
-    strCpy(index_file[i+1].music_name, filename2);
+    strCpy(index_list[i+1].music_name, filename2);
     if(filename2!=null){
       locateXY(2,1);
-      if(strLen(filename2)!<18){  //文字数*2で返ってくる
+      if(strLen(filename2)>=18){  //文字数*2で返ってくる
         putStr(filename2);
       }
-      else(){
-        filename2[8]='…';   //9文字目を「・・・」,10文字目を「¥0」
-        filename2[9]='¥0';
+      else{
+        filename2[8]='*';   //9文字目を「・・・」,10文字目を「¥0」
+        filename2[9]='\0';
         putStr(filename2);
       }
     }
-    strCpy(index_file[i+2].music_name, filename3);
+    strCpy(index_list[i+2].music_name, filename3);
     if(filename3!=null){
       locateXY(3,1);
-      if(strLen(filename3)!<18){  //文字数*2で返ってくる
+      if(strLen(filename3)>=18){  //文字数*2で返ってくる
         putStr(filename3);
       }
-      else(){
-        filename3[8]='…';   //9文字目を「・・・」,10文字目を「¥0」
-        filename3[9]='¥0';
+      else{
+        filename3[8]='*';   //9文字目を「・・・」,10文字目を「\0」
+        filename3[9]='\0';
         putStr(filename3);
       }
     }
@@ -227,13 +228,14 @@ public boolean alarm(){
       music=1;
       char[] path_head = "./MP3/";
       char[] path_tail = ".mp3";
-      mu_path = subCat(path_head,filename1);
-      music_path = subCat(mu_path,path_tail);
+//      mu_path = subCat(path_head,filename1);
+//      music_path = subCat(mu_path,path_tail);
       play(music_path);
     }
   }
   free(music_path);
   free(mu_path);
+  return alarmflag;
 }
 
 //alarmが呼ばれて
