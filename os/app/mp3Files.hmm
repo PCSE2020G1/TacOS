@@ -25,6 +25,7 @@
  * 2020.09.16 : 新規作成
  * 2020.11.20 : filesをpublic化
  * 2020.11.25 : numFileをpublic化
+ * 2020.11.27 : subCatをpublic化
  *
  * $Id$
  *
