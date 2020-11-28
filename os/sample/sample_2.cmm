@@ -1,0 +1,89 @@
+#include <stdio.hmm>
+#include <stdlib.hmm>
+#include <string.hmm>
+#include <fs.hmm>
+
+#define N 256 //indexファイルの1行の最大サイズ
+#define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
+#define MUSIC_NAME_SIZE 20 //曲名のサイズ
+#define ART_NAME_SIZE 20 //アーティスト名のサイズ
+
+
+//indexファイルの中身を格納する構造体
+struct index_type{
+    char[] music_name;
+    int id;
+    int play_cnt;
+    char[] art_name;
+    int song_len;
+};
+
+char[] str = array(N); //1行読み込む一時変数
+char[] tmp_str = array(10); //適当な一時変数
+index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する一時変数配列
+
+
+//配列はglobal宣言でないとエラー
+//char tag[4][5] = {"TPE1", "TPE2", "TIT2", "TIT3"};
+char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+            'a', 'b', 'c', 'd', 'e', 'f'};
+char[][] bin = {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", 
+                "1010", "1011", "1100", "1101", "1110", "1111"};
+int[] bin_p = {1, 2, 4, 8};
+int[][] bit_rate_table_1 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
+                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
+                            {0, 0, 0}, {288, 160, 128}, {320, 192, 160}, {0, 0, 0}, 
+                            {0, 0, 0}, {0, 0, 0}, {448, 384, 320}, {0, 0, 0}};
+int[][] bit_rate_table_2 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
+                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
+                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
+                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+int[][] sample_rate = {{44100, 22050, 11025}, {48000, 24000, 12000}, {32000, 16000, 8000}, {0, 0, 0}};
+
+char[] bin_tmp_1, bin_tmp_2 = array(10);
+char[] b = array(5);
+
+char[] file_mp3 = array(15); //拡張子を付けたファイル名を格納する一次変数
+char[] artist_name = array(10); //アーティスト名を格納する一次変数
+
+public char[][] files = {"/MP3/bgm_sample_1", "/MP3/bgm_sample_2"}; //(ファイル数, ファイルの文字数) 1234567890.123
+int numFile = 2; 
+
+
+public int main(){
+    char c;
+    int fp;
+    //構造体リストの動的確保
+    for(int i=0; i<INDEX_SIZE; i=i+1){
+        index_list[i] = malloc(sizeof(index_type));
+    }
+    //構造体の中身の配列動的確保
+    for(int i=0; i<INDEX_SIZE; i=i+1){
+        index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
+        index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
+    }
+    for(int i=0;i<numFile;i=i+1){
+        printf("i=%d\n", i);
+        printf("%s\n", files[i]);
+        index_list[i].music_name = files[i];
+        strCpy(file_mp3, files[i]);
+        strCat(file_mp3, ".mp3");
+        printf("%s\n", file_mp3);
+        if ((fp=open(files[i], READ_MODE))<0) {
+            //panic("panic:can't open MP3 Dir");
+            printf("panic:can't open MP3 Dir\n");
+        } else{
+            //c = fgetc(fp);
+            printf("openfile %d\n", i);
+        }
+        //...フレーム取得...//
+        //...再生時間算出...//
+        //...タグ情報取得...//
+        //index_list[i].song_len = play_time;
+        //index_list[i].art_name = artist_name;
+        //index_list[i].id = i;
+
+        close(fp);
+    }
+    return 0;
+}
