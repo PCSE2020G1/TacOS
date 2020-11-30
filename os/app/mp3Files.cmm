@@ -26,7 +26,12 @@
  * 2020.11.20 : TagInit()追加
  * 2020.11.25 : TaCOSに適したものに修正(ファイルの中身を読み出すところまで)
  * 2020.11.27 : フレーム数を数える処理の一部を追加
- * 2020.11.28 : ファイルサイズ削減
+ * 2020.11.28 : ファイルサイズ削減, gcd()追加
+ * 2020.11.29 : フレームカウント処理完成
+ *              再生時間計算処理完成
+ *              func_cal(), func_atoi, dtob(), subRound()追加
+ * 2020.11.30 : csvファイル読み込み処理追加
+ *              debugflag追加(フレームカウント処理は結構時間がかかるため他デバッグの時はスキップ)
  *
  * $Id$
  *
@@ -50,6 +55,7 @@ char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル�
 char[] artist_name = array(ART_NAME_SIZE); //アーティスト名を格納する一次変数
 
 char[] buf = array(32);
+boolean debugflag = true; //スキップ用のフラグ true:skip false:execute
 
 //char tag[4][5] = {"TPE1", "TPE2", "TIT2", "TIT3"};
 char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
@@ -199,11 +205,13 @@ void dtob(char[] binary, int decimal){
 }
 
 
+//計算簡略化のための関数
 int func_cal(int a, int s){
     return (a % s)*10;
 }
 
 
+//四捨五入計算用の関数
 int subRound(int a, int d){
     if(((a%d)/(d/10))>=5){
         return a/d + 1;
@@ -212,21 +220,22 @@ int subRound(int a, int d){
 }
 
 
-int func_atoi(char[] str, int t){
+//_AtoI()が謎だったので似たような関数を作成 ascii -> int
+int func_atoi(char[] str, int len){
   int tmp, sum = 0;
-  for(int i=0; t>=0; i=t+1){
+  for(int i=0; len>0; i=i+1){
     tmp = ord(str[i]) - ord('0');
-    for(int p=0; p<t; p=p+1){
+    for(int p=1; p<len; p=p+1){
       tmp = tmp*10;
     }
     sum = sum + tmp;
+    len = len - 1;
   }
   return sum;
 }
 
 
 void TagsInit(){
-  char c;
   int fp;
   int frame_size;
   int step = 0;
@@ -246,68 +255,35 @@ void TagsInit(){
   if((fp=open("index.csv", READ_MODE))>=0){ //インデックスファイルが存在したら
     //最初の行は空読み
     read(fp, buf, 31);
-    printF("%s\n", buf);
 
     //各行を処理する
     for(int i=0; i<5; i=i+1){
       int t;
       read(fp, buf, 1);
       for(t=0; ord(buf[0])!=10; t=t+1){
-        //printF("buf=%c\n", buf[0]);
         if(buf[0] == ','){
           str_line[t] = '\0';
           if(step == 0){ //music_name
             strCpy(index_list[i].music_name, str_line);
           } else if(step == 1){ //id
-            index_list[i].id = _AtoI(str_line);
-            printF("id=%d\n", _AtoI("4486"));
+            index_list[i].id = func_atoi(str_line, t);
           } else if(step == 2){ //play_cnt
-            index_list[i].play_cnt = _AtoI(str_line);
+            index_list[i].play_cnt = func_atoi(str_line, t);
           } else if(step == 3){ //art_name
             strCpy(index_list[i].art_name, str_line);
-          } else if(step == 4){ //song_len
-            index_list[i].song_len = _AtoI(str_line);
-          }
+          } 
           t = -1;
           step = step + 1;
         } else{
           str_line[t] = buf[0];
         }
-        printF("str=%s\n", str_line);
         read(fp, buf, 1);
       }
-      step = 0;
       str_line[t] = '\0';
-      printF("csv=%s\n", str_line);
-      /*
-      //曲名を取り出す
-      n = strChr(str, ','); //strChr() : 第一引数の中の何番目に第二引数の文字が存在するかを返す.
-      strNcpy(index_list[i].music_name, str, n+1);
-
-      //idを取り出す
-      //曲名分の長さをstrから削除し、残りの要素を前に詰める
-      strCpy(str, deleteStr(str, n+1));
-      n = strChr(str, ',');
-      strNcpy(tmp_str, str, n+1);
-      index_list[i].id = atoi(tmp_str);
-      
-      //再生回数を取り出す
-      strCpy(str, deleteStr(str, n+1));
-      n = strChr(str, ',');
-      strNcpy(tmp_str, str, n+1);
-      index_list[i].play_cnt = atoi(tmp_str);
-
-      //アーティスト名を取り出す
-      strCpy(str, deleteStr(str, n+1));
-      n = strChr(str, ',');
-      strNcpy(index_list[i].art_name, str, n+1);
-
-      //曲の長さを取り出す
-      strCpy(str, deleteStr(str, n+1));
-      strNcpy(tmp_str, str, strLen(str));
-      index_list[i].song_len = atoi(tmp_str);
-
-      */
+      if(step == 4){ //song_len
+        index_list[i].song_len = func_atoi(str_line, t);
+      }
+      step = 0;
       printF("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
     }
     free(str_line);
@@ -315,15 +291,16 @@ void TagsInit(){
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
       dbgPutStr("start\n");
-      index_list[p].music_name = files[p];
+      index_list[p].music_name = files[p]; //拡張子付き(削除する部分を後で作る)
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
       dbgPutStr(file_mp3);
       dbgPutStr("\n");
+      tag.sampling_h = 0;
       
       if ((fp=open(file_mp3, READ_MODE))<0) {
         panic("panic2:can't open MP3 files");
       }
-      while((read(fp, buf, 1))==1){
+      while((read(fp, buf, 1))==1 && debugflag == false){
         if(ord(buf[0])==255){
           bin_tmp_1 = malloc(sizeof(char)*10);
           bin_tmp_2 = malloc(sizeof(char)*10);
@@ -456,9 +433,7 @@ void TagsInit(){
           //printF("=======%x\n", buf[0]);
           while(true){
             tag.frame_cnt = tag.frame_cnt + 1;
-            //printF("frame_cnt=%d\n", tag.frame_cnt);
             read(fp, buf, 1);
-            //printF("ffffff=%x\n", buf[0]);
             if(ord(buf[0])!=251){ //end of file fb以外が来たら終了
               printF("finish\n");
               break;
@@ -467,18 +442,15 @@ void TagsInit(){
             int one_loop = (frame_size-1)%32;
             for(int i=0;i<loop;i=i+1){
               read(fp, buf, 32);
-              //printF("dddddd=%x\n", buf[0]);
               if(i==0){
                 dtob(bin_tmp_1, ord(buf[0]));
                 if(bin_tmp_1[6]=='1'){
-                  //printF("padding\n");
                   one_loop = one_loop + 1;
                 }
               }
             }
             for(int i=0;i<one_loop;i=i+1){
               read(fp, buf, 1);
-              //printF("ddd=%x\n", buf[0]);
             }
           }
 
@@ -487,10 +459,10 @@ void TagsInit(){
           free(bin_tmp_2);
 
           printF("frame_cnt=%d\n", tag.frame_cnt);
-          int sum = tag.frame_cnt * (1152 / 441);
-          sum = sum + subRound(tag.frame_cnt, 10) * (func_cal(1152, 441) / 441);
-          sum = sum + subRound(tag.frame_cnt, 100) * (func_cal(func_cal(1152, 441), 441) / 441);
-          sum = sum + subRound(tag.frame_cnt, 1000) * (func_cal(func_cal(func_cal(1152, 441), 441), 441) / 441);
+          int sum = tag.frame_cnt * (1152 / tag.sampling_h);
+          sum = sum + subRound(tag.frame_cnt, 10) * (func_cal(1152, tag.sampling_h) / tag.sampling_h);
+          sum = sum + subRound(tag.frame_cnt, 100) * (func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h) / tag.sampling_h);
+          sum = sum + subRound(tag.frame_cnt, 1000) * (func_cal(func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h), tag.sampling_h) / tag.sampling_h);
           tag.play_time = sum / 100;
           printF("time=%d\n", tag.play_time);
           //tag.play_time = tag.frame_cnt*(1152/tag.sampling_h);
