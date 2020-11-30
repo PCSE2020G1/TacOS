@@ -43,7 +43,7 @@
 
 #include <stdio.hmm>
 #include <stdlib.hmm>
-#include <string.hmm>
+#include <appUtil.hmm> //stringから変更
 #include <ctype.hmm>
 #include "spi.hmm"
 #include "font.hmm"
@@ -108,7 +108,6 @@ public void cls() {
 
 //引数で指定された範囲分、ディスプレイに表示されたものを消去する
 public void cls_block(int x, int y, int width, int height){
-  locateXY(x,y);
   for (int i=0; i<height; i=i+1) {
     locateXY(x, y+i);
     for (int j=0; j<width; j=j+1) {
@@ -130,6 +129,22 @@ public void putLineH(int x, int y, int height){
   for (int i=0; i<height; i=i+1) {
     locateXY(x,y+i);
     putCh(chr(0x7c));
+  }
+}
+
+//ディスプレイに二重横線を表示する
+public void putDoubleLineW(int x, int y, int width){
+  for (int i=0; i<width; i=i+1) {
+    locateXY(x+i,y);
+    putCh('=');
+  }
+}
+
+//ディスプレイに二重縦線を表示する
+public void putDoubleLineH(int x, int y, int height){
+  for (int i=0; i<height; i=i+1) {
+    locateXY(x,y+i);
+    putCh(chr(0x81));
   }
 }
 

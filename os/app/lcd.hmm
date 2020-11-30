@@ -49,3 +49,7 @@ public void cls_block(int x, int y, int width, int height);         //指定さ�
 public void putLineW(int x, int y, int width);                      //横線の表示
 public void putLineH(int x, int y, int height);                     //縦線の表示
 public void FilesSort(int mode);    //indexファイルにアクセスし、内容をソートして表示
+
+//新しく作りました関数
+public void putDoubleLineW(int x, int y, int width);
+public void putDoubleLineH(int x, int y, int height);
