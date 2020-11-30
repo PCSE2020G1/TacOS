@@ -34,6 +34,7 @@
 #include "spi.hmm"
 #include "mp3Files.hmm"
 #include "shellProc.hmm"
+#include "font.hmm"
 
 //-----------------------------------------------------------------------------
 // スイッチの読み取り
@@ -76,7 +77,7 @@ public int swToNum(int sw) {
   }
   return num;
 }
-      
+
 //-----------------------------------------------------------------------------
 // 画面表示
 //-----------------------------------------------------------------------------
@@ -105,10 +106,55 @@ void testDisplay(){
   putCh(chr(0x8c));
 }
 
+void homeDisplay(){
+  cls();
+  putLineH(0,0,8);
+  putLineH(15,0,8);
+  putLineW(1,0,9);
+  putLineW(1,7,9);
+  putLineW(11,0,4);
+  putLineW(11,7,4);
+  putDoubleLineH(10,0,8);
+  locateXY(2,1);
+  putStr("PLAYMODE");
+  locateXY(2,2);
+  putStr("ALARM");
+}
+
+void playmodeDisplay(){
+  //曲名表示部分のところ以外を消し去るようにしてる
+  //曲名を表示するところ、どうしようか？
+  //もし再生中の曲名とかのデータを格納する変数があるなら、それを受け取って表示もできそうね
+  cls_block(0,0,1,8);
+  cls_block(0,0,16,6);
+  cls_block(10,5,6,3);
+
+  putLineH(0,0,5);
+  putLineH(0,6,2);
+  putLineH(15,0,8);
+  putLineW(1,0,9);
+  putDoubleLineW(0,5,10);
+  putDoubleLineH(10,0,8);
+  putLineW(11,0,4);
+  putLineW(11,7,4);
+  locateXY(2,1);
+  putStr("Artist");
+  locateXY(2,2);
+  putStr("Album");
+  locateXY(2,3);
+  putStr("Music");
+
+}
+
 void asta(int y) {
   demoScreen();
   locateXY(0, y+1);
   putCh('*');
+}
+
+void putCursor(int y){
+  locateXY(1,y);
+    putCh('>');
 }
 
 //-----------------------------------------------------------------------------
@@ -119,6 +165,17 @@ public void shellMain() {
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
   mp3FilesInit();                                   // ファイル一覧を作る
+  homeDisplay();
+  putCursor(1);
+  for(;;){
+    int sw = readSw();
+    int num = swToNum(sw);
+    if(num==3){
+      playmodeDisplay();
+      putCursor(1);
+    }
+  }
+  /*
   demoScreen();                                     // 画面を初期化
   for (;;) {
     int sw = readSw();
@@ -136,4 +193,5 @@ public void shellMain() {
     }
     sleep(10);                                      // 10ms に一度
   }
+  */
 }
