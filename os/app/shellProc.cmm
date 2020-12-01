@@ -35,6 +35,7 @@
 #include "mp3Files.hmm"
 #include "shellProc.hmm"
 #include "font.hmm"
+#include <mm.hmm>
 
 //-----------------------------------------------------------------------------
 // スイッチの読み取り
@@ -95,16 +96,6 @@ void demoScreen() {
   putStr("6:stop");                                 // 6番のスイッチ
 }
 
-void testDisplay(){
-  cls();
-  locateXY(0,0);
-  //記号を呼び出す方法
-  putCh(chr(0x8a));
-  locateXY(0,1);
-  putCh(chr(0x8b));
-  locateXY(0,2);
-  putCh(chr(0x8c));
-}
 
 void homeDisplay(){
   cls();
@@ -122,7 +113,7 @@ void homeDisplay(){
 }
 
 void playmodeDisplay(){
-  //曲名表示部分のところ以外を消し去るようにしてる
+  //曲名表示部分,シークバーのところ以外を消し去るようにしてる
   //曲名を表示するところ、どうしようか？
   //もし再生中の曲名とかのデータを格納する変数があるなら、それを受け取って表示もできそうね
   cls_block(0,0,1,8);
@@ -146,6 +137,47 @@ void playmodeDisplay(){
 
 }
 
+char[] display_name = array(20);
+void playmode_music_Display(int n){
+  display_name = malloc(sizeof(char)*20);
+
+  cls_block(0,0,1,8);
+  cls_block(0,0,16,6);
+  cls_block(10,5,6,3);
+
+  putLineH(0,0,5);
+  putLineH(0,6,2);
+  putLineH(15,0,8);
+  putLineW(1,0,9);
+  putDoubleLineW(0,5,10);
+  putDoubleLineH(10,0,8);
+  putLineW(11,0,4);
+  putLineW(11,7,4);
+
+  for(int i=0; i<3; i=i+1){
+    //3曲分を取り出して画面に曲名を出す
+    char[] display_name = index_list[n+i].music_name;
+    dbgPutStr(index_list[n+i].music_name);
+    dbgPutStr("\n");
+    if(display_name[0]!='\0'){
+      if(strLen(display_name)>=8){ //8文字以上なら
+        //8文字目に'...'を表示する
+        display_name[8] = '\0';
+        locateXY(9,1+i);
+        putCh(chr(0x8a)); //'...'の表示
+      }
+      locateXY(2,1+i);
+      putStr(display_name);
+    }
+  }
+
+  //矢印の表示
+  locateXY(2,4);
+  putCh(chr(0x8c));
+
+
+}
+
 void asta(int y) {
   demoScreen();
   locateXY(0, y+1);
@@ -161,19 +193,189 @@ void putCursor(int y){
 // MP3 プレーヤのメインプロセス
 //-----------------------------------------------------------------------------
 // ここからプロセスの実行が始まる
+char[] tmp = array(20);
+
 public void shellMain() {
+  tmp = malloc(sizeof(char)*20);
+
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
   mp3FilesInit();                                   // ファイル一覧を作る
+  
+  //画面の状態を記録する変数
+  //0:  初期画面
+  //1:  /playmode/
+  //2:  /playmode/artist/
+  //3:  /playmode/album/
+  //4:  /playmode/music/
+  //5:  /alarm/
+  int state = 0;
+
+  //カーソルの位置を保持する変数
+  //locateXY()で呼び出す座標と同じ。つまり、この値が1のとき初期値
+  int cursor_pos = 1;
+
+  //index_listの現在参照位置を格納する変数
+  //playmode_music_Display()の引数に渡す
+  int index_current = 0;
+
   homeDisplay();
-  putCursor(1);
+  putCursor(cursor_pos);
+  int sw;
+  int num;
   for(;;){
-    int sw = readSw();
-    int num = swToNum(sw);
-    if(num==3){
-      playmodeDisplay();
-      putCursor(1);
+    sw = readSw();
+    num = swToNum(sw);
+    if(state==0){ //初期画面のとき
+      if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+        //カーソルを下に動かす
+        cursor_pos = cursor_pos + 1;
+        locateXY(1,cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==1 && num==3){ //横ボタンが押されたら(playmodeが選択されたら)
+        // /playmodeに移行
+        cursor_pos = 1;
+        state = 1;
+        playmodeDisplay();
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
+        //カーソルを上に動かす
+        cursor_pos = cursor_pos - 1;
+        locateXY(1,cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==3){ //横ボタンが押されたら(alarmが選択されたら)
+        //アラームモードに移行
+        state = 5;
+        // alarm();   //ここでアラーム関数を呼ぶ(未実装)
+      }
     }
+
+    else if(state==1){ // /playmode/のとき
+      putCursor(cursor_pos);
+      if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos); 
+      }
+      else if(cursor_pos==3 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==3 && num==3){ //右ボタンが押されたら(musicモードが選択されたら)
+        //musicモードに遷移
+        state = 4;
+        cursor_pos = 1;
+        strCpy(tmp,index_list[0].music_name);
+        if(tmp!=null) playmode_music_Display(index_current);
+        else{
+          dbgPutStr("no music here.");
+          dbgPutStr("\n");
+        }
+
+        putCursor(cursor_pos);
+      }
+      else if(num==2){ //左ボタンが押されたら(戻るボタン)
+        //初期画面に戻す
+        locateXY(1, cursor_pos);
+        putCh(' ');
+        state = 0;
+        cursor_pos = 1;
+        homeDisplay();
+        putCursor(cursor_pos);
+      }
+    }
+
+    else if(state==4){ // /playmode/music/
+      putCursor(cursor_pos);
+      if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==3 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==3 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==4 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos); 
+      }
+      else if(cursor_pos==4 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新と、次の三曲分の表示
+        locateXY(1, cursor_pos);
+        putCh(' ');
+        cursor_pos = 1;
+        putCursor(cursor_pos);
+        if(index_list[index_current*3].music_name!=null){
+          index_current = index_current + 3;
+          playmode_music_Display(index_current);
+        }
+      }
+      else if(num==2){ //戻るボタンが押されたら
+        //playmodeの画面に戻る
+        locateXY(1, cursor_pos);
+        putCh(' ');
+        state = 1;
+        cursor_pos = 1;
+        playmodeDisplay();
+        putCursor(cursor_pos);
+      }
+    }
+
+    sleep(10);
   }
   /*
   demoScreen();                                     // 画面を初期化
@@ -194,4 +396,5 @@ public void shellMain() {
     sleep(10);                                      // 10ms に一度
   }
   */
+  free(tmp);
 }
