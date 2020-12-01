@@ -35,6 +35,7 @@
 #include "mp3Files.hmm"
 #include "shellProc.hmm"
 #include "font.hmm"
+#include <mm.hmm>
 
 //-----------------------------------------------------------------------------
 // スイッチの読み取り
@@ -136,7 +137,10 @@ void playmodeDisplay(){
 
 }
 
+char[] display_name = array(20);
 void playmode_music_Display(int n){
+  display_name = malloc(sizeof(char)*20);
+
   cls_block(0,0,1,8);
   cls_block(0,0,16,6);
   cls_block(10,5,6,3);
@@ -153,7 +157,9 @@ void playmode_music_Display(int n){
   for(int i=0; i<3; i=i+1){
     //3曲分を取り出して画面に曲名を出す
     char[] display_name = index_list[n+i].music_name;
-    if(display_name!=null){
+    dbgPutStr(index_list[n+i].music_name);
+    dbgPutStr("\n");
+    if(display_name[0]!='\0'){
       if(strLen(display_name)>=8){ //8文字以上なら
         //8文字目に'...'を表示する
         display_name[8] = '\0';
@@ -187,10 +193,14 @@ void putCursor(int y){
 // MP3 プレーヤのメインプロセス
 //-----------------------------------------------------------------------------
 // ここからプロセスの実行が始まる
+char[] tmp = array(20);
+
 public void shellMain() {
+  tmp = malloc(sizeof(char)*20);
+
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
-  //mp3FilesInit();                                   // ファイル一覧を作る
+  mp3FilesInit();                                   // ファイル一覧を作る
   
   //画面の状態を記録する変数
   //0:  初期画面
@@ -279,7 +289,13 @@ public void shellMain() {
         //musicモードに遷移
         state = 4;
         cursor_pos = 1;
-        playmode_music_Display(index_current);
+        strCpy(tmp,index_list[0].music_name);
+        if(tmp!=null) playmode_music_Display(index_current);
+        else{
+          dbgPutStr("no music here.");
+          dbgPutStr("\n");
+        }
+
         putCursor(cursor_pos);
       }
       else if(num==2){ //左ボタンが押されたら(戻るボタン)
@@ -344,7 +360,7 @@ public void shellMain() {
         cursor_pos = 1;
         putCursor(cursor_pos);
         if(index_list[index_current*3].music_name!=null){
-          index_current = index_current + 1;
+          index_current = index_current + 3;
           playmode_music_Display(index_current);
         }
       }
@@ -380,4 +396,5 @@ public void shellMain() {
     sleep(10);                                      // 10ms に一度
   }
   */
+  free(tmp);
 }

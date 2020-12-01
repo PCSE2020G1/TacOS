@@ -26,6 +26,7 @@
  *
  */
 
+/*
 #define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
 
 // indexファイルの中身の各要素を格納する構造体
@@ -36,6 +37,7 @@ struct index_type{
     char[] art_name;
     int song_len;
 };
+*/
 
 public void locateXY(int x, int y);        // カーソル位置
 public void putCh(char c);                 // カーソル位置に１文字表示
@@ -43,7 +45,8 @@ public void putStr(char[] str);            // カーソル位置に文字列表�
 public void putDec(int val, int width);    // カーソル位置に10進数表示
 public void cls();                         // 画面のクリア
 
-index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する変数配列
+//mp3Filesに移動
+// index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する変数配列
 
 public void cls_block(int x, int y, int width, int height);         //指定された範囲分、画面のクリア
 public void putLineW(int x, int y, int width);                      //横線の表示
