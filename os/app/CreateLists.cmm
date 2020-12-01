@@ -31,7 +31,7 @@
 
 #include <fs.hmm>
 #include <util.hmm>
-#include <mm.fmm>
+#include <mm.hmm>
 #include "appUtil.hmm"
 #include "mp3Files.hmm"
 #include "lcd.hmm"
@@ -41,6 +41,7 @@
 public int[][] list = array(10, 30); //サイズは適当
 //list = {{1, 4, 5, 10}, {2, 3, 6}, {1, 2, 7, 8}};みたいなイメージ
 
+char[] str_line = array(32); //1行読み込む一時変数
 char[] list_file = array(FILE_SIZE); //リスト名を格納する一次変数
 char[] buf = array(32);
 int fd; 
@@ -58,7 +59,7 @@ public void ListCreateInit(){                                          // ファ
         if((fd=open(list_file, READ_MODE))>=0 && strCmp(list_file, "index.csv") != 0){ //リストファイルが存在したら
             //各行を処理する
             int t, p = 0;
-            read(fp, buf, 1);
+            read(fd, buf, 1);
             for(t=0; ord(buf[0])!=10; t=t+1){
                 if(buf[0] == ','){
                     str_line[t] = '\0';
@@ -68,7 +69,7 @@ public void ListCreateInit(){                                          // ファ
                 } else{
                     str_line[t] = buf[0];
                 }
-                read(fp, buf, 1);
+                read(fd, buf, 1);
             }
             str_line[t] = '\0';
             list[i][p] = func_atoi(str_line, t);
