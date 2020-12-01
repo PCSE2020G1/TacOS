@@ -32,6 +32,7 @@
  *              func_cal(), func_atoi, dtob(), subRound()追加
  * 2020.11.30 : csvファイル読み込み処理追加
  *              debugflag追加(フレームカウント処理は結構時間がかかるため他デバッグの時はスキップ)
+ * 2020.12.01 : アーティスト情報などを取得する部分を追加(未完成)
  *
  * $Id$
  *
@@ -48,16 +49,19 @@
 #define N 64 //indexファイルの1行の最大サイズ
 #define MUSIC_NAME_SIZE 20 //曲名のサイズ
 #define ART_NAME_SIZE 20 //アーティスト名のサイズ
+#define ALBAM_NAME_SIZE 20 //アーティスト名のサイズ
 
 
 char[] str_line = array(32); //1行読み込む一時変数
 char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル名を格納する一次変数
 char[] artist_name = array(ART_NAME_SIZE); //アーティスト名を格納する一次変数
+char[] albam_name = array(ALBAM_NAME_SIZE); //アルバム名を格納する一次変数
+char[] tag_str = array(10);
 
 char[] buf = array(32);
-boolean debugflag = true; //スキップ用のフラグ true:skip false:execute
+boolean debugflag = false; //スキップ用のフラグ true:skip false:execute
 
-//char tag[4][5] = {"TPE1", "TPE2", "TIT2", "TIT3"};
+//char[][] tag_list = {"TPE1", "TALB"}; //必要なID3タグ(アーティスト名，アルバム名)
 char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             'a', 'b', 'c', 'd', 'e', 'f'};
 char[][] bin = {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001",
@@ -77,7 +81,7 @@ int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 
 char[] bin_tmp_1, bin_tmp_2 = array(10);
 char[] b = array(5);
 
-public index_type[] index_list = array(INDEX_SIZE);
+public index_type[] index_list = array(INDEX_SIZE); //構造体配列の静的メモリ確保
 
 //構造体
 struct mp3_tag {
@@ -244,6 +248,9 @@ void TagsInit(){
   mp3_tag tag;
   tag = malloc(sizeof(mp3_tag));
   str_line = malloc(sizeof(char)*32);
+  tag_str = malloc(sizeof(char)*10);
+  boolean id_flag = false, not_flag = false;
+
 
   //構造体リストの動的確保
   for(int i=0; i<INDEX_SIZE; i=i+1){
@@ -253,6 +260,7 @@ void TagsInit(){
   for(int i=0; i<INDEX_SIZE; i=i+1){
       index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
       index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
+      index_list[i].albam_name = malloc(sizeof(char)*ALBAM_NAME_SIZE);
   }
   if((fp=open("index.csv", READ_MODE))>=0){ //インデックスファイルが存在したら
     //最初の行は空読み
@@ -293,17 +301,69 @@ void TagsInit(){
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
       dbgPutStr("start\n");
+      //タグ格納(初期値)
       strCpy(index_list[p].music_name, files[p]); //拡張子付き(削除する部分を後で作る)
+      index_list[p].id = p;
+      strCpy(index_list[p].art_name, "NO_NAME"); //アーティスト名が決められていたら更新
+      strCpy(index_list[p].albam_name, "NONE"); //アルバム名が決められていたら更新
+      index_list[p].play_cnt = 0;
+      //
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
       dbgPutStr(index_list[p].music_name);
       dbgPutStr("\n");
       tag.sampling_h = 0;
       int quo_1 = 1, quo_2 = 1;
+      int w = 0;
+      id_flag = false;
+      not_flag = false;
+
       
       if ((fp=open(file_mp3, READ_MODE))<0) {
         panic("panic2:can't open MP3 files");
       }
-      while((read(fp, buf, 1))==1 && debugflag == false){
+      while(debugflag == false){
+        for(int q=0; q<100; q=q+1){
+          read(fp, buf, 1);
+          //5文字か6文字以上だとタグとくっついてしまう -> 何とかタグ部分と分ける必要がある
+          if(isPrint(buf[0]) == true && ord(buf[0]) != 0 && not_flag == false){
+            while(true){
+              printF("moji=%c\n", buf[0]);
+              tag_str[w] = buf[0];
+              w = w + 1;
+              read(fp, buf, 1);
+              if(isPrint(buf[0]) == false || ord(buf[0]) == 0){
+                break;
+              }
+            }
+            tag_str[w] = '\0';
+            printF("%s:\n", tag_str);
+            if(step == 1){
+              strCpy(index_list[p].art_name, tag_str);
+              step = 0;
+            } else if(step == 2){
+              strCpy(index_list[p].albam_name, tag_str);
+              step = 0;
+            }
+            if(strCmp(tag_str, "TPE1") == 0){
+              printF("artist_step\n");
+              step = 1;
+            } else if(strCmp(tag_str, "TALB") == 0){
+              printF("albam_step\n");
+              step = 2;
+            } if(tag_str[0]=='I' && tag_str[1]=='D' && tag_str[2]=='3'){
+              printF("Id3tag exist\n");
+              id_flag = true;
+            } 
+            if(id_flag == false){
+              printF("not ID3tag\n");
+              not_flag = true;
+              tag_str[0] = '\0';
+            }
+            w = 0;
+          }
+        }
+        printF("%s / %s \n", index_list[p].art_name, index_list[p].albam_name);
+        break;
         if(ord(buf[0])==255){
           bin_tmp_1 = malloc(sizeof(char)*10);
           bin_tmp_2 = malloc(sizeof(char)*10);

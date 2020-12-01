@@ -27,6 +27,8 @@
  * 2020.11.25 : numFileをpublic化
  * 2020.11.27 : subCatをpublic化
  * 2020.12.01 : func_atoiをpublic化
+ *              インデックスファイル構造体をmp3Files.cmmに移動
+ *              index_typeにalbam_name(アルバム名)を追加
  *
  * $Id$
  *
@@ -50,6 +52,7 @@ struct index_type{
     int id;
     int play_cnt;
     char[] art_name;
+    char[] albam_name;
     int song_len;
 };
 

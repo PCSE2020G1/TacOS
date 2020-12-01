@@ -85,29 +85,35 @@ public void ListCreateInit(){                                          // ファ
 public char[][] IndexCreate(){
     if((fd=open("index.csv", WRITE_MODE))>=0){ //ファイルが開けたら
         write(fd, ",id,play_cnt,art_name,song_len", 31); //最初の一行
-        //曲名
-        strCpy(buf, index_list[i].music_name);
-        write(fd, buf, 15); //バイト数はまだ適当
-        //
-        write(fd, ',', 1);
-        //id
-        strCpy(buf, _ItoA(index_list[i].id));
-        write(fd, buf, 5);
-        //
-        write(fd, ',', 1);
-        //play_cnt
-        strCpy(buf, _ItoA(index_list[i].play_cnt));
-        write(fd, buf, 5);
-        //
-        write(fd, ',', 1);
-        //art_name
-        strCpy(buf, index_list[i].art_name);
-        write(fd, buf, 10);
-        //
-        write(fd, ',', 1);
-        //song_len
-        strCpy(buf, _ItoA(index_list[i].song_len));
-        write(fd, buf, 3);
+        for(int i=0; i<numFile; i=i+1){
+            //曲名
+            strCpy(buf, index_list[i].music_name);
+            write(fd, buf, 15); //バイト数はまだ適当
+            //
+            write(fd, ",", 1);
+            //id
+            strCpy(buf, _ItoA(index_list[i].id));
+            write(fd, buf, 5);
+            //
+            write(fd, ",", 1);
+            //play_cnt
+            strCpy(buf, _ItoA(index_list[i].play_cnt));
+            write(fd, buf, 5);
+            //
+            write(fd, ",", 1);
+            //art_name
+            strCpy(buf, index_list[i].art_name);
+            write(fd, buf, 10);
+            //
+            write(fd, ",", 1);
+            //song_len
+            strCpy(buf, _ItoA(index_list[i].song_len));
+            write(fd, buf, 3);
+            //
+            //改行
+            write(fd, "\n", 1);
+            //
+        }
     }
     return null;
 }
