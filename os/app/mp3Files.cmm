@@ -55,7 +55,7 @@ char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル�
 char[] artist_name = array(ART_NAME_SIZE); //アーティスト名を格納する一次変数
 
 char[] buf = array(32);
-boolean debugflag = true; //スキップ用のフラグ true:skip false:execute
+boolean debugflag = false; //スキップ用のフラグ true:skip false:execute
 
 //char tag[4][5] = {"TPE1", "TPE2", "TIT2", "TIT3"};
 char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -296,6 +296,7 @@ void TagsInit(){
       dbgPutStr(file_mp3);
       dbgPutStr("\n");
       tag.sampling_h = 0;
+      int quo_1 = 1, quo_2 = 1;
       
       if ((fp=open(file_mp3, READ_MODE))<0) {
         panic("panic2:can't open MP3 files");
@@ -403,22 +404,30 @@ void TagsInit(){
               printF("expand byte\n");
               tag.padding = '1';
           }
-          int quo_1 = gcd(tag.bit_rate*10, tag.sampling_h);//最大公約数
+          if(gcd(tag.bit_rate*10, tag.sampling_h) > 0){
+            quo_1 = gcd(tag.bit_rate*10, tag.sampling_h);//最大公約数
+          }
           printF("quo1=%d\n", quo_1);
           if(tag.layer_id == '1'){
-            int quo_2 = gcd(12, tag.sampling_h/quo_1);
+            if(gcd(12, tag.sampling_h/quo_1) > 0){
+              quo_2 = gcd(12, tag.sampling_h/quo_1);
+            }
             printF("quo2=%d\n", quo_2);
             frame_size = (((12 / quo_2)*(tag.bit_rate*10 / quo_1) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0')))*4;
             //frame_size = ((12*tag.bit_rate*1000 / tag.sampling_h) + (ord(tag.padding) - ord('0')))*4;
           } else if(tag.layer_id == '2' || tag.layer_id == '3'){
               if(tag.version_id == '1'){
-                int quo_2 = gcd(144, tag.sampling_h/quo_1);
+                if(gcd(144, tag.sampling_h/quo_1) > 0){
+                  quo_2 = gcd(144, tag.sampling_h/quo_1);
+                }
                 printF("quo2=%d\n", quo_2);
                 frame_size = (((144 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
                 //frame_size = ((144*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
               }
           } else if(tag.layer_id == '3' && tag.version_id == '3'){
-            int quo_2 = gcd(72, tag.sampling_h/quo_1);
+            if(gcd(72, tag.sampling_h/quo_1) > 0){
+              quo_2 = gcd(72, tag.sampling_h/quo_1);
+            }
             printF("quo2=%d\n", quo_2);
             frame_size = (((72 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
             //frame_size = ((72*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
@@ -482,4 +491,5 @@ void TagsInit(){
       close(fp);
     }
   }
+  free(tag);
 }

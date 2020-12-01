@@ -23,6 +23,7 @@
  * mp3Files.cmm : MP3ファイルの一覧
  *
  * 2020.11.20 : 新規作成
+ * 2020.11.30 : ListCreateInit(), IndexCreate()追加
  *
  * $Id$
  *
@@ -45,7 +46,7 @@ char[] buf = array(32);
 int fd; 
 
 
-public void ListCreateInt(){                                          // ファイルディスクリプタ
+public void ListCreateInit(){                                          // ファイルディスクリプタ
     if ((fd=open("./", READ_MODE))<0) {
         panic("panic1:can't open MP3 Dir debug");
     }
@@ -61,7 +62,7 @@ public void ListCreateInt(){                                          // ファ�
             for(t=0; ord(buf[0])!=10; t=t+1){
                 if(buf[0] == ','){
                     str_line[t] = '\0';
-                    list_file[i][p] = func_atoi(str_line, t);
+                    list[i][p] = func_atoi(str_line, t);
                     t = -1;
                     p = p + 1;
                 } else{
@@ -70,7 +71,7 @@ public void ListCreateInt(){                                          // ファ�
                 read(fp, buf, 1);
             }
             str_line[t] = '\0';
-            list_file[i][p] = func_atoi(str_line, t);
+            list[i][p] = func_atoi(str_line, t);
             printF("list = %d\n", list_file[i]);
         }   
         i = i + 1;
@@ -116,8 +117,8 @@ public void FileManage(){
 }
 
 
-public char[] ListCreate(index_type[] index_file){
-
+public char[] ListCreate(index_type[] index_file, int n){
+    
     return null;
 }
 
