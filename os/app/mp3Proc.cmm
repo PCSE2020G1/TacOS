@@ -99,8 +99,12 @@ public void mp3Main() {
     Link l=receive(link);                   // クライアントから受信待ち
     syncFlag = false;                       // クライアント停止中にフラグ操作
     if (l.op==STOP) {
+      dbgPutStr("client restart");
+      dbgPutStr("\n");
       send(link, OK);                       // クライアントを再開する
     } else if (l.op==START) {
+      dbgPutStr("link op START");
+      dbgPutStr("\n");
       trans(_ItoA(l.prm1));                 // ファイルからデータ転送
     }
   }
