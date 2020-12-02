@@ -36,11 +36,11 @@
 #include "CreateLists.hmm"
 #include "mp3Files.hmm"
 
-public char[][] list = array(5, 30); //サイズは適当
+public int[][] list = array(5, 20); //サイズは適当
 //list = {{1, 4, 5, 10}, {2, 3, 6}, {1, 2, 7, 8}};みたいなイメージ
 
 char[] str_line = array(32); //1行読み込む一時変数
-char[] list_file = array(10); //リスト名を格納する一次変数
+char[] list_file = array(15); //リスト名を格納する一次変数
 char[] buf = array(32);
 boolean index_flag = false;
 
@@ -48,81 +48,94 @@ void IndexCreate();
 
 public void ListCreateInit(){    
     int fd;                                      // ファイルディスクリプタ
-    //if ((fd=open("./", READ_MODE))<0) {
-    //    panic("panic_1c:can't open Dir");
-    //}
+    if ((fd=open("./", READ_MODE))<0) {
+        panic("panic_1c:can't open Dir");
+    }
     Dir_i dir; //appUtil.hmmで宣言されている
     //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
     int i = 0;
-    while (i<5 && (dir=readDir_i(fd, "csv"))!=null) {   // csvファイルを読み込む
-        strCpy(list_file, dir.name); //ファイル名をfilesにコピー
-        if((fd=open(list_file, READ_MODE))>=0){ //csvファイルが存在したら
-            if(strCmp(list_file, "index.csv") != 0){ //リストファイルだったら
+    while (i<5 && (dir=readDir_i(fd, "CSV"))!=null) {   // csvファイルを読み込む
+        //strCpy(list_file, dir.name); //ファイル名をfilesにコピー
+        list_file = subCat("./", dir.name);
+        printF("%s\n", list_file);
+        if(strCmp(list_file, "./INDEX.CSV") == 0){
+            printF("index_file exist\n");
+            index_flag = true;
+        } else{
+            if((fd=open(list_file, READ_MODE))>=0){ //リストファイルを開く
+                printF("%s\n", list_file);
                 //各行を処理する
                 int t, p = 0;
-                read(fd, buf, 1);
-                for(t=0; ord(buf[0])!=10; t=t+1){
+                //read(fd, buf, 1);
+                for(t=0; read(fd, buf, 1)==1; t=t+1){
+                    printF("%c\n", buf[0]);
                     if(buf[0] == ','){
                         str_line[t] = '\0';
-                        list[i] = str_line;
+                        list[i][p] = func_atoi(str_line, t);
                         t = -1;
                         p = p + 1;
                     } else{
                         str_line[t] = buf[0];
                     }
-                    read(fd, buf, 1);
+                    //read(fd, buf, 1);
                 }
                 str_line[t] = '\0';
-                list[i] = str_line;
-            } else{ //インデックスファイルが存在したら
-                index_flag = true;
+                list[i][p] = func_atoi(str_line, t);
+                printF("list = %c\n", list[i]);
             }
-            printF("list = %c\n", list_file[i]);
         }   
         i = i + 1;
         close(fd);
     }
-    //if(index_flag == false){ //インデックスファイルが存在しなかったら
-    //    IndexCreate(); //インデックスファイルを作成
-    //}
+    if(!index_flag){ //インデックスファイルが存在しなかったら
+        printF("not index_file\n");
+        IndexCreate(); //インデックスファイルを作成
+    }
     printF("end\n");
 }
 
 
 void IndexCreate(){
     int fd;
+    if(creat("./index.csv") != 0){
+        panic("can't create index_file");
+    }
     if((fd=open("index.csv", WRITE_MODE))>=0){ //ファイルが開けたら
-        write(fd, ",id,play_cnt,art_name,song_len", 31); //最初の一行
+        printF("create index_file\n");
+        write(fd, ",id,play_cnt,art_name,song_len\n", 31); //最初の一行
         for(int i=0; i<numFile; i=i+1){
             //曲名
             strCpy(buf, index_list[i].music_name);
-            write(fd, buf, 15); //バイト数はまだ適当
+            write(fd, buf, strLen(index_list[i].music_name)); //バイト数はまだ適当
             //
             write(fd, ",", 1);
             //id
-            strCpy(buf, _ItoA(index_list[i].id));
-            write(fd, buf, 5);
+            strCpy(buf, func_itoa(index_list[i].id));
+            write(fd, buf, strLen(func_itoa(index_list[i].id)));
             //
             write(fd, ",", 1);
             //play_cnt
-            strCpy(buf, _ItoA(index_list[i].play_cnt));
-            write(fd, buf, 5);
+            strCpy(buf, func_itoa(index_list[i].play_cnt));
+            write(fd, buf, strLen(func_itoa(index_list[i].play_cnt)));
             //
             write(fd, ",", 1);
             //art_name
             strCpy(buf, index_list[i].art_name);
-            write(fd, buf, 10);
+            write(fd, buf, strLen(index_list[i].art_name));
             //
             write(fd, ",", 1);
             //song_len
-            strCpy(buf, _ItoA(index_list[i].song_len));
-            write(fd, buf, 3);
+            strCpy(buf, func_itoa(index_list[i].song_len));
+            write(fd, buf, strLen(func_itoa(index_list[i].song_len)));
             //
             //改行
             write(fd, "\n", 1);
             //
+            printF("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
         }
+        
     }
+    close(fd);
 }
 
 
@@ -131,9 +144,16 @@ public void FileManage(){
 }
 
 
-public char[] ListCreate(char[] target, int n){
-    printF("listcreate\n");
-    return target;
+public void ListCreate(char[] target, int n){
+    int fd;
+    if(creat("./list_1.csv") != 0){
+        panic("can't create index_file");
+    }
+    if((fd=open("list_1.csv", WRITE_MODE))>=0){ //ファイルが開けたら
+        printF("listcreate\n");
+        write(fd, "1,3,4,10,15", 11);
+    }
+    close(fd);
 }
 
 public void ListManage(char[] list_file){

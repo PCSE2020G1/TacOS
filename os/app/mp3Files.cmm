@@ -46,7 +46,6 @@
 //#include "lcd.hmm"
 
 
-#define N 64 //indexファイルの1行の最大サイズ
 #define MUSIC_NAME_SIZE 20 //曲名のサイズ
 #define ART_NAME_SIZE 20 //アーティスト名のサイズ
 #define ALBAM_NAME_SIZE 20 //アーティスト名のサイズ
@@ -104,7 +103,7 @@ void TagsInit();
 public void mp3FilesInit() {
   int fd;                                           // ファイルディスクリプタ
   if ((fd=open(mp3Dir, READ_MODE))<0) {
-    panic("panic1:can't open MP3 Dir debug");
+    panic("panic1:can't open MP3 Dir");
   }
   Dir_i dir; //appUtil.hmmで宣言されている
   //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
@@ -235,13 +234,45 @@ public int func_atoi(char[] str, int len){
 }
 
 
+//_ItoAもよくわからなかったため似た関数を作成 int -> ascii
+public char[] func_itoa(int a){
+  char[] str = malloc(sizeof(char)*5);
+  if(48 <= (a+ord('0')) && (a+ord('0')) <= 57){ //0~9ならば
+      str[0] = chr(a+ord('0'));
+      str[1] = '\0';
+      return str;
+  } else{ //10以上
+      int cnt = 0, q = a, i;
+      while(q > 10){ //桁数
+          q = q / 10;
+          cnt = cnt + 1;
+      }
+      str[0] = chr(q+ord('0'));
+      q = a;
+      for(i=1; i<cnt; i=i+1){
+          for(int t=0; t<(cnt-i); t=t+1){
+              q = q / 10;
+          }
+          q = q%10;
+          str[i] = chr(q+ord('0'));
+          q = a;
+      }
+      int ama = a%10;
+      str[i] = chr(ama+ord('0'));
+      str[i+1] = '\0';
+      return str;
+  }
+  free(str);
+  return "0";
+}
+
+
 void TagsInit(){
   int fp;
   int frame_size;
   int step = 0;
   mp3_tag tag;
   boolean id_flag = false, not_flag = false;
-  printF("%x / %x / %d / %x / %d\n", 0x2020, 0x4040, 0x2020, 0x0000+0x2020, 0x0000+0x2020);
 
 
   //構造体リストの動的確保
@@ -303,8 +334,7 @@ void TagsInit(){
       dbgPutStr(index_list[p].music_name);
       dbgPutStr("\n");
       //タグ格納(初期値)
-      printF("file_len=%d\n", strLen(files[p]));
-      strCpy(index_list[p].music_name, files[p]); //拡張子付き(削除する部分を後で作る)
+      strCpy(index_list[p].music_name, files[p]); //拡張子付き
       index_list[p].id = p;
       strCpy(index_list[p].art_name, "NO_NAME"); //アーティスト名が決められていたら更新
       strCpy(index_list[p].albam_name, "NONE"); //アルバム名が決められていたら更新

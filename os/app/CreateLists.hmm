@@ -28,5 +28,5 @@
 
  public void ListCreateInit();
  public void FileManage();
- public char[] ListCreate(char[] target, int n);
+ public void ListCreate(char[] target, int n);
  public void ListManage(char[] list_file);

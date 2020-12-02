@@ -29,13 +29,14 @@
  */
 #include <kernel.hmm>
 #include <util.hmm>
+#include <mm.hmm>
 #include "lcd.hmm"
 #include "mp3Proc.hmm"
 #include "spi.hmm"
 #include "mp3Files.hmm"
 #include "shellProc.hmm"
 #include "font.hmm"
-#include <mm.hmm>
+#include "CreateLists.hmm"
 
 //-----------------------------------------------------------------------------
 // スイッチの読み取り
@@ -229,6 +230,7 @@ public void shellMain() {
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
   mp3FilesInit();                                   // ファイル一覧を作る
+  ListCreateInit();                                 //　インデックスファイルやリストの作成/管理
   
   //画面の状態を記録する変数
   //0:  初期画面
