@@ -224,6 +224,7 @@ char[] tmp = array(20);
 char[] play_path = array(30);
 public void shellMain() {
   tmp = malloc(sizeof(char)*20);
+  play_path = malloc(sizeof(char)*30);
 
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
@@ -351,15 +352,12 @@ public void shellMain() {
         if(!playFlag){
           //停止中の場合,再生
           printF("play music\n");
-          play_path = malloc(sizeof(char)*30);
-          //dbgPutStr(index_list[index_current+cursor_pos-1].music_name);
-          //dbgPutStr("\n");
+          strCpy(play_path, "");
           play_path = subCat("./MP3/", index_list[index_current].music_name); //パスの生成
           //subCat(path, ".mp3"); //パスの生成
           printF(play_path);
           printF("\n");
           play(play_path);
-          free(play_path);
         } else{
           //再生中の場合、停止
           printF("music stop\n");
@@ -381,6 +379,25 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
+
+      else if(cursor_pos==2 && num==3){ //まだ長押しは実装してない。今回は試験的に右ボタンで曲の再生、停止をしてみる
+        //再生、停止
+        if(!playFlag){
+          //停止中の場合,再生
+          printF("play music\n");
+          strCpy(play_path, "");
+          play_path = subCat("./MP3/", index_list[index_current+1].music_name); //パスの生成
+          //subCat(path, ".mp3"); //パスの生成
+          printF(play_path);
+          printF("\n");
+          play(play_path);
+        } else{
+          //再生中の場合、停止
+          printF("music stop\n");
+          stop();
+        }
+      }
+
       else if(cursor_pos==3 && num==1){ //上ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos - 1;
@@ -395,6 +412,25 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
+
+      else if(cursor_pos==3 && num==3){ //まだ長押しは実装してない。今回は試験的に右ボタンで曲の再生、停止をしてみる
+        //再生、停止
+        if(!playFlag){
+          //停止中の場合,再生
+          printF("play music\n");
+          strCpy(play_path, "");
+          play_path = subCat("./MP3/", index_list[index_current+2].music_name); //パスの生成
+          //subCat(path, ".mp3"); //パスの生成
+          printF(play_path);
+          printF("\n");
+          play(play_path);
+        } else{
+          //再生中の場合、停止
+          printF("music stop\n");
+          stop();
+        }
+      }
+
       else if(cursor_pos==4 && num==1){ //上ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos - 1;
@@ -452,4 +488,5 @@ public void shellMain() {
   }
   */
   free(tmp);
+  free(play_path);
 }
