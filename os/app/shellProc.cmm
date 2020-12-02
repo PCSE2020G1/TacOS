@@ -159,7 +159,7 @@ void playmode_music_Display(int n){
     strCpy(display_name,index_list[n+i].music_name);
     dbgPutStr(index_list[n+i].music_name);
     dbgPutStr("\n");
-    if(display_name[0]!='\0'){
+    if(display_name[0]!='\0' && isPrint(display_name[0])){ //nullでなく、表示可能な文字列であれば
       if(strLen(display_name)>=8){ //8文字以上なら
         //8文字目に'...'を表示する
         display_name[8] = '\0';
@@ -172,8 +172,13 @@ void playmode_music_Display(int n){
   }
 
   //矢印の表示
-  locateXY(2,4);
-  putCh(chr(0x8c));
+  if((index_list[n+3].music_name!=null) && (isPrint(index_list[n+3].music_name[0]))){
+    locateXY(2,4);
+    putCh(chr(0x8c));
+  } else {
+    locateXY(2,4);
+    putCh(' ');
+  }
   free(display_name);
 
 }
@@ -238,6 +243,16 @@ public void shellMain() {
   //4:  /playmode/music/
   //5:  /alarm/
   int state = 0;
+  
+  //optionの状態を記録する変数
+  //0:  optionなし
+  //1:  /playmode/artist/option0
+  //2:  /playmode/artist/option1
+  //3:  /playmode/album/option0
+  //4:  /playmode/album/option1
+  //5:  /playmode/music/option0
+  //6:  /playmode/music/option1
+  int option_state = 0;
 
   //カーソルの位置を保持する変数
   //locateXY()で呼び出す座標と同じ。つまり、この値が1のとき初期値
@@ -250,7 +265,8 @@ public void shellMain() {
   homeDisplay();
   putCursor(cursor_pos);
   int sw;
-  int num;
+  int num; //スイッチの現在の状態の番号を格納
+  int last_num = 0; //一つ前に読み取ったスイッチの状態の番号を格納
   for(;;){
     sw = readSw();
     num = swToNum(sw);
@@ -317,6 +333,7 @@ public void shellMain() {
         //musicモードに遷移
         state = 4;
         cursor_pos = 1;
+        //FilesSort(0); //index_listを昇順にする
         strCpy(tmp,index_list[0].music_name);
         if(tmp!=null) playmode_music_Display(index_current);
         else{
@@ -337,8 +354,21 @@ public void shellMain() {
       }
     }
 
-    else if(state==4){ // /playmode/music/
+    else if(state==4){ // /playmode/music/strCpy
       putCursor(cursor_pos);
+      if(cursor_pos==1 && num==1){ //上ボタンが押されたら
+        //存在していれば、カーソルの更新と前の三曲分の表示
+        if(index_current!= 0){
+          locateXY(1, cursor_pos);
+          putCh(' ');
+          cursor_pos = 4;
+          putCursor(cursor_pos);
+          if(index_list[index_current-3].music_name!=null){
+            index_current = index_current - 3;
+            playmode_music_Display(index_current);
+          }
+        }
+      }
       if(cursor_pos==1 && num==5){ //下ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos + 1;
@@ -461,6 +491,7 @@ public void shellMain() {
     }
 
     sleep(10);
+    last_num = num;
   }
   /*
   demoScreen();                                     // 画面を初期化
