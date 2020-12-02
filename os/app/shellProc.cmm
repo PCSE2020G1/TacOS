@@ -172,13 +172,8 @@ void playmode_music_Display(int n){
   }
 
   //矢印の表示
-  if((index_list[n+3].music_name!=null) && (isPrint(index_list[n+3].music_name[0]))){
-    locateXY(2,4);
-    putCh(chr(0x8c));
-  } else {
-    locateXY(2,4);
-    putCh(' ');
-  }
+  locateXY(2,4);
+  putCh(chr(0x8c));
   free(display_name);
 
 }
@@ -333,7 +328,7 @@ public void shellMain() {
         //musicモードに遷移
         state = 4;
         cursor_pos = 1;
-        //FilesSort(0); //index_listを昇順にする
+        FilesSort(1); //index_listを降順にする
         strCpy(tmp,index_list[0].music_name);
         if(tmp!=null) playmode_music_Display(index_current);
         else{
@@ -354,7 +349,7 @@ public void shellMain() {
       }
     }
 
-    else if(state==4){ // /playmode/music/strCpy
+    else if(state==4){ // /playmode/music/
       putCursor(cursor_pos);
       if(cursor_pos==1 && num==1){ //上ボタンが押されたら
         //存在していれば、カーソルの更新と前の三曲分の表示
@@ -365,6 +360,15 @@ public void shellMain() {
           putCursor(cursor_pos);
           if(index_list[index_current-3].music_name!=null){
             index_current = index_current - 3;
+            playmode_music_Display(index_current);
+          }
+        } else {
+          locateXY(1, cursor_pos);
+          putCh(' ');
+          cursor_pos = 4;
+          putCursor(cursor_pos);
+          if(index_list[INDEX_SIZE-3].music_name!=null){
+            index_current = INDEX_SIZE - 3;
             playmode_music_Display(index_current);
           }
         }
@@ -481,6 +485,7 @@ public void shellMain() {
       }
       else if(num==2){ //戻るボタンが押されたら
         //playmodeの画面に戻る
+        index_current = 0;
         locateXY(1, cursor_pos);
         putCh(' ');
         state = 1;
