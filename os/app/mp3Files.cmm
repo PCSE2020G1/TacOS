@@ -54,18 +54,12 @@
 
 char[] str_line = array(32); //1行読み込む一時変数
 char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル名を格納する一次変数
-char[] artist_name = array(ART_NAME_SIZE); //アーティスト名を格納する一次変数
-char[] albam_name = array(ALBAM_NAME_SIZE); //アルバム名を格納する一次変数
 char[] tag_str = array(10);
-
+char[] tag_tmp = array(5);
 char[] buf = array(32);
+
 boolean debugflag = false; //スキップ用のフラグ true:skip false:execute
 
-//char[][] tag_list = {"TPE1", "TALB"}; //必要なID3タグ(アーティスト名，アルバム名)
-char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            'a', 'b', 'c', 'd', 'e', 'f'};
-char[][] bin = {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001",
-                "1010", "1011", "1100", "1101", "1110", "1111"};
 int[] bin_p = {1, 2, 4, 8};
 int[][] bit_rate_table_1 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
@@ -78,7 +72,7 @@ int[][] bit_rate_table_2 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 0}}; //int型は16bit(signed)なので、下二桁を落とす
 //int[][] sample_rate = {{44100, 22050, 11025}, {48000, 24000, 12000}, {32000, 16000, 8000}, {0, 0, 0}};
 
-char[] bin_tmp_1, bin_tmp_2 = array(10);
+char[] bin_tmp_1 = array(10);
 char[] b = array(5);
 
 public index_type[] index_list = array(INDEX_SIZE); //構造体配列の静的メモリ確保
@@ -159,7 +153,7 @@ void subCpy(char[] target, char[] ori, int index, int n){
 
 //appUtil.cmmにあるstrCatを使うとうまく動かなかったので自作
 public char[] subCat(char[] cat_s, char[] src){
-  char[] s = malloc(sizeof(char)*128);
+  char[] s = malloc(sizeof(char)*32);
   int c_num = strLen(cat_s);
   int s_num = strLen(src);
   strCpy(s, cat_s);
@@ -246,9 +240,6 @@ void TagsInit(){
   int frame_size;
   int step = 0;
   mp3_tag tag;
-  tag = malloc(sizeof(mp3_tag));
-  str_line = malloc(sizeof(char)*32);
-  tag_str = malloc(sizeof(char)*10);
   boolean id_flag = false, not_flag = false;
 
 
@@ -263,6 +254,7 @@ void TagsInit(){
       index_list[i].albam_name = malloc(sizeof(char)*ALBAM_NAME_SIZE);
   }
   if((fp=open("index.csv", READ_MODE))>=0){ //インデックスファイルが存在したら
+    str_line = malloc(sizeof(char)*32);
     //最初の行は空読み
     read(fp, buf, 31);
 
@@ -298,19 +290,25 @@ void TagsInit(){
     }
     free(str_line);
   } else{ //インデックスファイルが存在しない(初期起動)
+    tag = malloc(sizeof(mp3_tag));
+    tag_str = malloc(sizeof(char)*10);
+    tag_tmp = malloc(sizeof(char)*5);
+    bin_tmp_1 = malloc(sizeof(char)*10);
+    b = malloc(sizeof(char)*5);
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
       dbgPutStr("start\n");
+      file_mp3 = subCat(d, files[p]); //strCatと同じ動き
+      dbgPutStr(index_list[p].music_name);
+      dbgPutStr("\n");
       //タグ格納(初期値)
+      printF("file_len=%d\n", strLen(files[p]));
       strCpy(index_list[p].music_name, files[p]); //拡張子付き(削除する部分を後で作る)
       index_list[p].id = p;
       strCpy(index_list[p].art_name, "NO_NAME"); //アーティスト名が決められていたら更新
       strCpy(index_list[p].albam_name, "NONE"); //アルバム名が決められていたら更新
       index_list[p].play_cnt = 0;
       //
-      file_mp3 = subCat(d, files[p]); //strCatと同じ動き
-      dbgPutStr(index_list[p].music_name);
-      dbgPutStr("\n");
       tag.sampling_h = 0;
       int quo_1 = 1, quo_2 = 1;
       int w = 0;
@@ -327,9 +325,11 @@ void TagsInit(){
           //5文字か6文字以上だとタグとくっついてしまう -> 何とかタグ部分と分ける必要がある
           if(isPrint(buf[0]) == true && ord(buf[0]) != 0 && not_flag == false){
             while(true){
-              printF("moji=%c\n", buf[0]);
-              tag_str[w] = buf[0];
-              w = w + 1;
+              if(isDigit(buf[0]) == true || isUpper(buf[0]) == true || isLower(buf[0]) == true){
+                printF("moji=%c\n", buf[0]);
+                tag_str[w] = buf[0];
+                w = w + 1;
+              }
               read(fp, buf, 1);
               if(isPrint(buf[0]) == false || ord(buf[0]) == 0){
                 break;
@@ -337,6 +337,16 @@ void TagsInit(){
             }
             tag_str[w] = '\0';
             printF("%s:\n", tag_str);
+            if(w >= 5){ //文字数が長いとタグがくっついている可能性がある
+              for(int i=0; i<4; i=i+1){
+                tag_tmp[i] = tag_str[w-(4-i)];
+              }
+              printF("tag=%s\n", tag_tmp);
+              if(strCmp(tag_tmp, "TPE1") == 0 || strCmp(tag_tmp, "TALB") == 0){
+                tag_str[w-4] = '\0';
+              }
+              tag_tmp[4] = '\0';
+            }
             if(step == 1){
               strCpy(index_list[p].art_name, tag_str);
               step = 0;
@@ -344,11 +354,13 @@ void TagsInit(){
               strCpy(index_list[p].albam_name, tag_str);
               step = 0;
             }
-            if(strCmp(tag_str, "TPE1") == 0){
+            if(strCmp(tag_str, "TPE1") == 0 || strCmp(tag_tmp, "TPE1") == 0){
               printF("artist_step\n");
+              tag_tmp[0] = '\0';
               step = 1;
-            } else if(strCmp(tag_str, "TALB") == 0){
+            } else if(strCmp(tag_str, "TALB") == 0 || strCmp(tag_tmp, "TALB") == 0){
               printF("albam_step\n");
+              tag_tmp[0] = '\0';
               step = 2;
             } if(tag_str[0]=='I' && tag_str[1]=='D' && tag_str[2]=='3'){
               printF("Id3tag exist\n");
@@ -365,10 +377,6 @@ void TagsInit(){
         printF("%s / %s \n", index_list[p].art_name, index_list[p].albam_name);
         break;
         if(ord(buf[0])==255){
-          bin_tmp_1 = malloc(sizeof(char)*10);
-          bin_tmp_2 = malloc(sizeof(char)*10);
-          b = malloc(sizeof(char)*5);
-
           read(fp, buf, 1);
           printF("c=%d\n", buf[0]);
           //decimal -> binary
@@ -525,10 +533,6 @@ void TagsInit(){
             }
           }
 
-          free(b);
-          free(bin_tmp_1);
-          free(bin_tmp_2);
-
           printF("frame_cnt=%d\n", tag.frame_cnt);
           int sum = tag.frame_cnt * (1152 / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 10) * (func_cal(1152, tag.sampling_h) / tag.sampling_h);
@@ -552,6 +556,8 @@ void TagsInit(){
 
       close(fp);
     }
+    free(b);
+    free(bin_tmp_1);
+    free(tag);
   }
-  free(tag);
 }
