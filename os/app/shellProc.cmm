@@ -362,15 +362,6 @@ public void shellMain() {
             index_current = index_current - 3;
             playmode_music_Display(index_current);
           }
-        } else {
-          locateXY(1, cursor_pos);
-          putCh(' ');
-          cursor_pos = 4;
-          putCursor(cursor_pos);
-          if(index_list[INDEX_SIZE-3].music_name!=null){
-            index_current = INDEX_SIZE - 3;
-            playmode_music_Display(index_current);
-          }
         }
       }
       if(cursor_pos==1 && num==5){ //下ボタンが押されたら
