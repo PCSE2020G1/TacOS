@@ -35,11 +35,11 @@
 #include "../util/crt0.hmm"
 #include "../kernel/kernel.hmm"
 #include "../fs/fs.hmm"
-#include "../util/util.hmm"
 #include "spi.hmm"
 #include "lcd.hmm"
 #include "shellProc.hmm"
 #include <mm.hmm>
+#include <util.hmm>
 
 // レスポンス
 #define OK  0
@@ -60,31 +60,40 @@ boolean music = false;            //0=無音,1=有音
 boolean alarmflag = false;
 //アラーム機能がオンになっているか．戻り値0でアラーム実行,戻り値1で何かしらの理由でアラームが解除されたこと示す
 
+
+public void timelcd(){
+  cls_block(3,3,5,1);
+  locateXY(3,3);
+  putDec(minute,2);
+  locateXY(5,3);
+  putCh(':');
+  locateXY(6,3);
+  putDec(second,2);
+}
+
 //1秒タイマー
 public void timer1s(){
+  minute=1;
+  second=5;
+  timelcd();
   int timer = minute * 60 + second;
   for(int i=0; i<timer; i=i+1){  //指定秒数回
     for(int k=0; k<10; k=k+1){   //1s=0.1s*10回
       out(0x00,0x64); //0番地に100ms(=0.1s)
     }
-    second = second - 1;
     if(minute!=0 && second==0){
       minute=minute-1;
       second=59;
-    }//lcdのカウントを下げる
+      timelcd();
+    }
     else if(minute==0 && second==0){
       break;
     }
+    else{
+      second = second - 1;
+      timelcd();
+    }
   }
-}
-public void timelcd(){
-  cls_block(3,3,5,1);
-  locateXY(3,3);
-  putDec(minute,2);
-  locateXY(3,5);
-  putCh(':');
-  locateXY(3,6);
-  putDec(second,2);
 }
 
 public void configtime(){    //時間入力画面をlcdへ
@@ -97,11 +106,11 @@ public void configtime(){    //時間入力画面をlcdへ
   putStr("config time");
   locateXY(3,3);
   putDec(minute,2);
-  locateXY(3,5);
+  locateXY(5,3);
   putCh(':');
-  locateXY(3,6);
+  locateXY(6,3);
   putDec(second,2);
-  locateXY(3,9);
+  locateXY(9,3);
   putStr("SET");
 
   for(;;){
@@ -139,32 +148,40 @@ public void configtime(){    //時間入力画面をlcdへ
 public boolean alarm(){
   alarmflag = true;
   cls();//画面枠の作成↓
-  putLineW(0,1,9);
-  putLineW(5,0,10);
-  putLineW(0,11,4);
-  putLineW(7,11,4);
+  putLineW(1,0,9);
+  putDoubleLineW(0,5,10); //二重線
+  putLineW(11,0,4);
+  putLineW(11,7,4);
   putLineH(0,0,5);
-  putLineH(6,0,2);
-  putLineH(0,10,8);
-  putLineH(0,11,8);
-  locateXY(4,1);
-  putCh('=');
-  locateXY(6,1);
+  putLineH(0,6,2);
+  putDoubleLineH(10,0,8);
+  //putLineH(11,0,8);
+  locateXY(2,4);
+  putCh('V');         //下向きの矢印
+  locateXY(1,6);
   putStr("-select");
-  locateXY(7,4);
+  locateXY(4,7);
   putStr("track-");
 
 //曲名リストをlcdへ
-  int i=1;
+  int i=0;
   filename1 = malloc(sizeof(char)*N);
   filename2 = malloc(sizeof(char)*N);
   filename3 = malloc(sizeof(char)*N);
   mu_path = malloc(sizeof(char)*M);
   music_path = malloc(sizeof(char)*M);
+  ////////////
+  locateXY(1,2);
+  putStr("HelloWorld");
+  printF("HelloWorld");
+  ////////////
   FilesSort(0);       //mode0
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
+    locateXY(1,3);
+    putStr("HelloHello");
+
     if(i!=numFile && num==5 ){               //下ボタン
       i=i+1;
     }
@@ -175,40 +192,50 @@ public boolean alarm(){
       configtime();
       break;
     }
-    strCpy(index_list[i].music_name, filename1);
-    if(filename1!=null){         //曲名が存在するか
-      locateXY(1,1);
-      if(strLen(filename1)>=18){  //文字数*2で返ってくる
-        putStr(filename1);
-      }
-      else{
-        filename1[8]='*';   //9文字目を「・・・」,10文字目を「¥0」
-        filename1[9]='\0';
-        putStr(filename1);
-      }
+    else{
+    i=i+0;
+    }
 
-    }
-    strCpy(index_list[i+1].music_name, filename2);
-    if(filename2!=null){
-      locateXY(2,1);
-      if(strLen(filename2)>=18){  //文字数*2で返ってくる
-        putStr(filename2);
+    strCpy(filename1,index_list[i].music_name);
+    if(filename1!=null){         //曲名が存在するか
+      cls_block(1,2,8,1);
+      locateXY(1,2);
+      if(strLen(filename1)<=16){  //文字数*2で返ってくる
+        putStr(filename1);
+        locateXY(1,1);
+        putCh('>');
       }
       else{
-        filename2[8]='*';   //9文字目を「・・・」,10文字目を「¥0」
-        filename2[9]='\0';
+        filename1[7]='*';   //8文字目を「・・・」,9文字目を「¥0」
+        filename1[8]='\0';
+        putStr(filename1);
+      }
+    }
+    strCpy(filename2,index_list[i+1].music_name);
+    if(filename2!=null){
+    cls_block(2,2,8,1);
+      locateXY(2,2);
+      if(strLen(filename2)<=16){  //文字数*2で返ってくる
+        putStr(filename2);
+        locateXY(1,1);
+        putCh('A');
+      }
+      else{
+        filename2[7]='*';   //8文字目を「・・・」,9文字目を「¥0」
+        filename2[8]='\0';
         putStr(filename2);
       }
     }
-    strCpy(index_list[i+2].music_name, filename3);
+    strCpy(filename3,index_list[i+2].music_name);
     if(filename3!=null){
-      locateXY(3,1);
-      if(strLen(filename3)>=18){  //文字数*2で返ってくる
+    cls_block(2,3,8,1);
+      locateXY(2,3);
+      if(strLen(filename3)<=16){  //文字数*2で返ってくる
         putStr(filename3);
       }
       else{
-        filename3[8]='*';   //9文字目を「・・・」,10文字目を「\0」
-        filename3[9]='\0';
+        filename3[7]='*';   //8文字目を「・・・」,9文字目を「\0」
+        filename3[8]='\0';
         putStr(filename3);
       }
     }

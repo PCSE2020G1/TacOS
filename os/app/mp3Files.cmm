@@ -55,7 +55,7 @@ char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル�
 char[] artist_name = array(ART_NAME_SIZE); //アーティスト名を格納する一次変数
 
 char[] buf = array(32);
-boolean debugflag = false; //スキップ用のフラグ true:skip false:execute
+boolean debugflag = true; //スキップ用のフラグ true:skip false:execute
 
 //char tag[4][5] = {"TPE1", "TPE2", "TIT2", "TIT3"};
 char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -215,7 +215,7 @@ int func_cal(int a, int s){
 int subRound(int a, int d){
     if(((a%d)/(d/10))>=5){
         return a/d + 1;
-    } 
+    }
     return a/d;
 }
 
@@ -271,7 +271,7 @@ void TagsInit(){
             index_list[i].play_cnt = func_atoi(str_line, t);
           } else if(step == 3){ //art_name
             strCpy(index_list[i].art_name, str_line);
-          } 
+          }
           t = -1;
           step = step + 1;
         } else{
@@ -291,13 +291,14 @@ void TagsInit(){
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
       dbgPutStr("start\n");
-      index_list[p].music_name = files[p]; //拡張子付き(削除する部分を後で作る)
+      strCpy(index_list[p].music_name,files[p]);
+      //index_list[p].music_name = files[p]; //拡張子付き(削除する部分を後で作る)
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
       dbgPutStr(file_mp3);
       dbgPutStr("\n");
       tag.sampling_h = 0;
       int quo_1 = 1, quo_2 = 1;
-      
+
       if ((fp=open(file_mp3, READ_MODE))<0) {
         panic("panic2:can't open MP3 files");
       }
