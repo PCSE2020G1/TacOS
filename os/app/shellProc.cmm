@@ -156,7 +156,7 @@ void playmode_music_Display(int n){
 
   for(int i=0; i<3; i=i+1){
     //3曲分を取り出して画面に曲名を出す
-    char[] display_name = index_list[n+i].music_name;
+    strCpy(display_name,index_list[n+i].music_name);
     dbgPutStr(index_list[n+i].music_name);
     dbgPutStr("\n");
     if(display_name[0]!='\0'){
@@ -174,8 +174,34 @@ void playmode_music_Display(int n){
   //矢印の表示
   locateXY(2,4);
   putCh(chr(0x8c));
+  free(display_name);
+
+}
 
 
+// /playmode/artistを選択した際に表示
+void playmode_artist_Display(int id){
+  display_name = malloc(sizeof(char)*20);
+
+  // それまでの情報を削除
+  cls_block(0,0,1,8);
+  cls_block(0,0,16,6);
+  cls_block(10,5,6,3);
+
+  //枠線の表示
+  putLineH(0,0,5);
+  putLineH(0,6,2);
+  putLineH(15,0,8);
+  putLineW(1,0,9);
+  putDoubleLineW(0,5,10);
+  putDoubleLineH(10,0,8);
+  putLineW(11,0,4);
+  putLineW(11,7,4);
+
+  //index_listからアーティスト情報を取ってくる
+  
+
+  free(display_name);
 }
 
 void asta(int y) {
@@ -195,6 +221,7 @@ void putCursor(int y){
 // ここからプロセスの実行が始まる
 char[] tmp = array(20);
 
+char[] play_path = array(30);
 public void shellMain() {
   tmp = malloc(sizeof(char)*20);
 
@@ -318,6 +345,28 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
+
+      else if(cursor_pos==1 && num==3){ //まだ長押しは実装してない。今回は試験的に右ボタンで曲の再生、停止をしてみる
+        //再生、停止
+        if(!playFlag){
+          //停止中の場合,再生
+          printF("play music\n");
+          play_path = malloc(sizeof(char)*30);
+          //dbgPutStr(index_list[index_current+cursor_pos-1].music_name);
+          //dbgPutStr("\n");
+          play_path = subCat("./MP3/", index_list[index_current].music_name); //パスの生成
+          //subCat(path, ".mp3"); //パスの生成
+          printF(play_path);
+          printF("\n");
+          play(play_path);
+          free(play_path);
+        } else{
+          //再生中の場合、停止
+          printF("music stop\n");
+          stop();
+        }
+      }
+
       else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos - 1;
@@ -359,7 +408,7 @@ public void shellMain() {
         putCh(' ');
         cursor_pos = 1;
         putCursor(cursor_pos);
-        if(index_list[index_current*3].music_name!=null){
+        if(index_list[index_current+3].music_name!=null){
           index_current = index_current + 3;
           playmode_music_Display(index_current);
         }
