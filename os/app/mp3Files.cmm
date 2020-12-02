@@ -241,6 +241,7 @@ void TagsInit(){
   int step = 0;
   mp3_tag tag;
   boolean id_flag = false, not_flag = false;
+  printF("%x / %x / %d / %x / %d\n", 0x2020, 0x4040, 0x2020, 0x0000+0x2020, 0x0000+0x2020);
 
 
   //構造体リストの動的確保
@@ -326,7 +327,6 @@ void TagsInit(){
           if(isPrint(buf[0]) == true && ord(buf[0]) != 0 && not_flag == false){
             while(true){
               if(isDigit(buf[0]) == true || isUpper(buf[0]) == true || isLower(buf[0]) == true){
-                printF("moji=%c\n", buf[0]);
                 tag_str[w] = buf[0];
                 w = w + 1;
               }
@@ -336,12 +336,12 @@ void TagsInit(){
               }
             }
             tag_str[w] = '\0';
-            printF("%s:\n", tag_str);
+            //printF("%s:\n", tag_str);
             if(w >= 5){ //文字数が長いとタグがくっついている可能性がある
               for(int i=0; i<4; i=i+1){
                 tag_tmp[i] = tag_str[w-(4-i)];
               }
-              printF("tag=%s\n", tag_tmp);
+              //printF("tag=%s\n", tag_tmp);
               if(strCmp(tag_tmp, "TPE1") == 0 || strCmp(tag_tmp, "TALB") == 0){
                 tag_str[w-4] = '\0';
               }
@@ -355,19 +355,19 @@ void TagsInit(){
               step = 0;
             }
             if(strCmp(tag_str, "TPE1") == 0 || strCmp(tag_tmp, "TPE1") == 0){
-              printF("artist_step\n");
+              //printF("artist_step\n");
               tag_tmp[0] = '\0';
               step = 1;
             } else if(strCmp(tag_str, "TALB") == 0 || strCmp(tag_tmp, "TALB") == 0){
-              printF("albam_step\n");
+              //printF("albam_step\n");
               tag_tmp[0] = '\0';
               step = 2;
             } if(tag_str[0]=='I' && tag_str[1]=='D' && tag_str[2]=='3'){
-              printF("Id3tag exist\n");
+              //printF("Id3tag exist\n");
               id_flag = true;
             } 
             if(id_flag == false){
-              printF("not ID3tag\n");
+              //printF("not ID3tag\n");
               not_flag = true;
               tag_str[0] = '\0';
             }

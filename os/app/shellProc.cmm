@@ -422,6 +422,12 @@ public void shellMain() {
         playmodeDisplay();
         putCursor(cursor_pos);
       }
+      else if(num==4){ //音量調節(テスト用)
+        if(valume < 0x6060){    
+          valume = valume + 0x1010; //音量を上げる
+          spiWriteMp3Reg(0x0b, 0x6060-valume);
+        }
+      }
     }
 
     sleep(10);
