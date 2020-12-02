@@ -42,7 +42,7 @@
 #include <mm.hmm>
 #include "appUtil.hmm"
 #include "mp3Files.hmm"
-#include "lcd.hmm"
+//#include "lcd.hmm"
 
 
 #define N 64 //indexファイルの1行の最大サイズ
@@ -76,6 +76,8 @@ int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 
 
 char[] bin_tmp_1, bin_tmp_2 = array(10);
 char[] b = array(5);
+
+public index_type[] index_list = array(INDEX_SIZE);
 
 //構造体
 struct mp3_tag {
@@ -291,10 +293,10 @@ void TagsInit(){
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
       dbgPutStr("start\n");
-      strCpy(index_list[p].music_name,files[p]);
-      //index_list[p].music_name = files[p]; //拡張子付き(削除する部分を後で作る)
+
+      strCpy(index_list[p].music_name, files[p]); //拡張子付き(削除する部分を後で作る)
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
-      dbgPutStr(file_mp3);
+      dbgPutStr(index_list[p].music_name);
       dbgPutStr("\n");
       tag.sampling_h = 0;
       int quo_1 = 1, quo_2 = 1;
