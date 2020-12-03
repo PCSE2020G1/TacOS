@@ -55,11 +55,8 @@ public void ListCreateInit(){
     //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
     int i = 0;
     while (i<5 && (dir=readDir_i(fd, "CSV"))!=null) {   // csvファイルを読み込む
-        //strCpy(list_file, dir.name); //ファイル名をfilesにコピー
         list_file = subCat("./", dir.name);
-        printF("%s\n", list_file);
         if(strCmp(list_file, "./INDEX.CSV") == 0){
-            printF("index_file exist\n");
             index_flag = true;
         } else{
             if((fd=open(list_file, READ_MODE))>=0){ //リストファイルを開く
@@ -88,10 +85,9 @@ public void ListCreateInit(){
         close(fd);
     }
     if(!index_flag){ //インデックスファイルが存在しなかったら
-        printF("not index_file\n");
         IndexCreate(); //インデックスファイルを作成
     }
-    printF("end\n");
+    printF("create end\n");
 }
 
 
@@ -101,7 +97,6 @@ void IndexCreate(){
         panic("can't create index_file");
     }
     if((fd=open("index.csv", WRITE_MODE))>=0){ //ファイルが開けたら
-        printF("create index_file\n");
         write(fd, ",id,play_cnt,art_name,song_len\n", 31); //最初の一行
         for(int i=0; i<numFile; i=i+1){
             //曲名

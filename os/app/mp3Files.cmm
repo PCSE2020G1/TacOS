@@ -129,23 +129,11 @@ public char[] mp3FilesGetName(int n) {
 }
 
 
-//str[]の要素前delete_size個分の要素を削除し、前に詰める関数
-char[] deleteStr(char[] str, int delete_size){
-    int j = 0;
-    for(int i=delete_size; i<strLen(str); i=i+1){
-        str[j] = str[i];
-        j = j+1;
-    }
-    return str;
-}
-
-
 void subCpy(char[] target, char[] ori, int index, int n){
     for(int i=0;i<n;i=i+1){
         target[i] = ori[i+index];
     }
     target[n] = '\0';
-    printF("b=%s\n",target);
     return;
 }
 
@@ -191,7 +179,6 @@ int gcd(int a, int b){
 void dtob(char[] binary, int decimal){
     int i;
     for(i=7;decimal>0; i=i-1){
-        //printF("%c\n", chr((decimal%2)+ord('0')));
         binary[i] = chr((decimal%2)+ord('0'));
         decimal = decimal/2;
     }
@@ -392,15 +379,12 @@ void TagsInit(){
             tag_str[0] = '\0';
           }
           w = 0;
-          printF("%s / %s \n", index_list[p].art_name, index_list[p].albam_name);
         }
         if(ord(buf[0])==255){
           read(fp, buf, 1);
-          printF("c=%d\n", buf[0]);
           //decimal -> binary
           dtob(bin_tmp_1, ord(buf[0]));
           //
-          printF("bin_8=%s\n", bin_tmp_1);
           //B:version
           subCpy(b, bin_tmp_1, 3, 2);
           if(strCmp(b, "00") == 0){
@@ -414,7 +398,6 @@ void TagsInit(){
           } else{
               tag.version_id = '0';
           }
-          printF("%c\n", tag.version_id);
           //
           //C:layer
           subCpy(b, bin_tmp_1, 5, 2);
@@ -426,17 +409,12 @@ void TagsInit(){
               tag.layer_id = '2';
           } else if(strCmp(b, "11") == 0){
               tag.layer_id = '1';
-          } else{
-              printF("nothing\n");
           }
-          printF("%c\n", tag.layer_id);
           //
           //next header(third)
           read(fp, buf, 1);
           //decimal -> binary
           dtob(bin_tmp_1, ord(buf[0]));
-          //
-          printF("bin_8=%s\n", bin_tmp_1);
           //
           //E:bit rate
           subCpy(b, bin_tmp_1, 0, 4);
@@ -444,18 +422,15 @@ void TagsInit(){
           int len = 3;
           //binary -> decimal
           for(int i=0;i<=len;i=i+1){
-              printF("c=%c\n", b[len-i]);
               if(b[len-i]=='1'){
                   bin_num = bin_num + bin_p[i];
               }
           }
-          printF("bin_num=%d\n",bin_num);
           if(tag.version_id == '1'){
               tag.bit_rate = bit_rate_table_1[bin_num][ord(tag.layer_id)-ord('0')-1];
           } else if(tag.version_id == '2' || tag.version_id == '3'){
               tag.bit_rate = bit_rate_table_2[bin_num][ord(tag.layer_id)-ord('0')-1];
           }
-          printF("bit_rate=%d\n", tag.bit_rate);
           //
           //F:sampling rate
           subCpy(b, bin_tmp_1, 4, 2);
@@ -469,7 +444,6 @@ void TagsInit(){
           if(tag.version_id != '0'){
               tag.sampling_h = sample_rate[sampling_num][ord(tag.version_id)-ord('0')-1];
           }
-          printF("sampling_h=%d\n", tag.sampling_h);
           //
           //G:padding
           char b1 = bin_tmp_1[6];
@@ -487,30 +461,24 @@ void TagsInit(){
               quo_2 = gcd(12, tag.sampling_h/quo_1);
             }
             frame_size = (((12 / quo_2)*(tag.bit_rate*10 / quo_1) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0')))*4;
-            //frame_size = ((12*tag.bit_rate*1000 / tag.sampling_h) + (ord(tag.padding) - ord('0')))*4;
           } else if(tag.layer_id == '2' || tag.layer_id == '3'){
               if(tag.version_id == '1'){
                 if(gcd(144, tag.sampling_h/quo_1) > 0){
                   quo_2 = gcd(144, tag.sampling_h/quo_1);
                 }
                 frame_size = (((144 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
-                //frame_size = ((144*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
               }
           } else if(tag.layer_id == '3' && tag.version_id == '3'){
             if(gcd(72, tag.sampling_h/quo_1) > 0){
               quo_2 = gcd(72, tag.sampling_h/quo_1);
             }
             frame_size = (((72 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
-            //frame_size = ((72*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
           }
           //
-          printF("frame_size=%d\n", frame_size);
           //next frame
           for(int i=0;i<=frame_size-3;i=i+1){
               read(fp, buf, 1);
-              //printF("f=%x\n", buf[0]);
           }
-          //printF("=======%x\n", buf[0]);
           while(true){
             tag.frame_cnt = tag.frame_cnt + 1;
             read(fp, buf, 1);
@@ -533,16 +501,12 @@ void TagsInit(){
               read(fp, buf, 1);
             }
           }
-
-          printF("frame_cnt=%d\n", tag.frame_cnt);
           int sum = tag.frame_cnt * (1152 / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 10) * (func_cal(1152, tag.sampling_h) / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 100) * (func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h) / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 1000) * (func_cal(func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h), tag.sampling_h) / tag.sampling_h);
           tag.play_time = sum / 100;
-          printF("time=%d\n", tag.play_time);
           index_list[p].song_len = tag.play_time;
-          //tag.play_time = tag.frame_cnt*(1152/tag.sampling_h);
           tag.frame_cnt = 0;
 
           break;
