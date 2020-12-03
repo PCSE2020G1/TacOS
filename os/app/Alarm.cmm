@@ -75,13 +75,11 @@ public void timelcd(){
     cls_block(4,4,5,1);
     locateXY(4,4);
     putCh('^');
-    printF("分\n");
   }
   else if(set==true){
     cls_block(4,4,5,1);
     locateXY(7,4);
     putCh('^');
-    printF("秒\n");
   }
 }
 
@@ -214,7 +212,7 @@ public boolean alarm(){
   putDoubleLineH(10,0,8);
   //putLineH(11,0,8);
   locateXY(2,4);
-  putCh('V');         //下向きの矢印
+  putCh(chr(0x8c));     //下向きの矢印
   locateXY(1,6);
   putStr("-select");
   locateXY(4,7);
@@ -246,17 +244,19 @@ public boolean alarm(){
 
     strCpy(filename1,index_list[i].music_name);
     strCpy(fullname,index_list[i].music_name);
+    locateXY(1,1);
+    putCh('>');
     if(filename1!=null){         //曲名が存在するか
       cls_block(2,1,8,1);
       locateXY(2,1);
       if(strLen(filename1)<=8){  //文字数*2で返ってくる
         putStr(filename1);
-        locateXY(1,1);
-        putCh('>');
       }
       else{
-        filename1[7]='*';   //8文字目を「・・・」,9文字目を「¥0」
-        filename1[8]='\0';
+        locateXY(9,1);
+        putCh(chr(0x8a));
+        filename1[7]='\0';
+        locateXY(2,1);
         putStr(filename1);
       }
     }
@@ -266,12 +266,12 @@ public boolean alarm(){
       locateXY(2,2);
       if(strLen(filename2)<=8){  //文字数*2で返ってくる
         putStr(filename2);
-        locateXY(1,1);
-        putCh('A');
       }
       else{
-        filename2[7]='*';   //8文字目を「・・・」,9文字目を「¥0」
-        filename2[8]='\0';
+        locateXY(9,2);
+        putCh(chr(0x8a));
+        filename2[7]='\0';
+        locateXY(2,2);
         putStr(filename2);
       }
     }
@@ -283,8 +283,10 @@ public boolean alarm(){
         putStr(filename3);
       }
       else{
-        filename3[7]='*';   //8文字目を「・・・」,9文字目を「\0」
-        filename3[8]='\0';
+        locateXY(9,2);
+        putCh(chr(0x8a));
+        filename3[7]='\0';
+        locateXY(2,3);
         putStr(filename3);
       }
     }
@@ -294,16 +296,12 @@ public boolean alarm(){
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
     if(playFlag==true && num==5){
-      printF("止まる\n");
-      printF("%s\n",music_path);
       stop();
       music=false;
       alarmflag = false;
       break;
     } else if(playFlag==false) {
       music=true;
-      printF("なる");
-      printF("%s\n",music_path);
       play(music_path);
     }
     sleep(10);
