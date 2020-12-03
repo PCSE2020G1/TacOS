@@ -568,18 +568,12 @@ public void shellMain() {
         playmodeDisplay();
         putCursor(cursor_pos);
       }
-      else if(num==4){ //音量調節(テスト用)
-        if(valume < 0x6060){    
-          valume = valume + 0x1010; //音量を上げる
-          spiWriteMp3Reg(0x0b, 0x6060-valume);
-        }
-      }
     }
 
     if(num==4){
       //音量上げる
-      if(valume+0x0202 < 0x6060){    
-          valume = valume + 0x0202; //音量を上げる
+      if(valume+0x0404 < 0x6060){    
+          valume = valume + 0x0404; //音量を上げる
           spiWriteMp3Reg(0x0b, 0x6060-valume);
       }
     }
