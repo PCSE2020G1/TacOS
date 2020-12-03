@@ -22,11 +22,15 @@
 /*
  * spi.hmm : spi ドライバ
  *
+ * 2020.12.01 : valumeをpublic化
  * 2020.08.23 : spitestの一部から組み込み用に転用
  * 2019.08.26 : SPI のハードウェア化に対応，リセット機能を追加
  * 2019.08.09 : 新規作成
+
  *
  */
+
+public int valume;
 
 public void spiInit();
 public void spiWriteLcdCom(char[] buf);
