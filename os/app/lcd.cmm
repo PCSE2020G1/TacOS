@@ -118,21 +118,24 @@ public void cls_block(int x, int y, int width, int height){
 }
 
 //ディスプレイに横線を表示する
-public void putLineW(int x, int y, int width){
+public void putLineW(int x, int y, int width, boolean double){
   for (int i=0; i<width; i=i+1) {
     locateXY(x+i,y);
-    putCh('-');
+    if(double) putCh('=');
+    else putCh('-');
   }
 }
 
 //ディスプレイに縦線を表示する
-public void putLineH(int x, int y, int height){
+public void putLineH(int x, int y, int height, boolean double){
   for (int i=0; i<height; i=i+1) {
     locateXY(x,y+i);
-    putCh(chr(0x7c));
+    if(double) putCh(chr(0x81));
+    else putCh(chr(0x7c));
   }
 }
 
+/*
 //ディスプレイに二重横線を表示する
 public void putDoubleLineW(int x, int y, int width){
   for (int i=0; i<width; i=i+1) {
@@ -148,6 +151,7 @@ public void putDoubleLineH(int x, int y, int height){
     putCh(chr(0x81));
   }
 }
+*/
 
 //indexファイルにアクセスし、ファイルをソートしてディスプレイに表示する
 public void FilesSort(int mode){

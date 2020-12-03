@@ -37,6 +37,8 @@
 #include "shellProc.hmm"
 #include "font.hmm"
 #include "CreateLists.hmm"
+#include "appUtil.hmm"
+
 
 //-----------------------------------------------------------------------------
 // スイッチの読み取り
@@ -52,6 +54,12 @@
 
 int sw0 = 0x00;                                     // 前回の状態(デバウンス前)
 int sw1 = 0x00;                                     // 前回の状態(デバウンス後)
+
+// /playmode/artist/を選択した際、アーティストを抽出して、そのアーティスト名が何曲あるかを同時に格納する,構造体配列の型
+struct artist_array_type{
+    char[] art_name;
+    int quantity;
+};
 
 public int readSw() {
   int sw = ~in(0x18) & SWS;                         // スイッチを読み正論理に変換
@@ -80,33 +88,35 @@ public int swToNum(int sw) {
   return num;
 }
 
+
+//引数の文字列が印刷可能な文字であればtrue, そうでなければfalseを返す
+boolean isName(char[] str){
+  boolean flag = true;
+  for(int id=0; id<strLen(str); id=id+1){ //1文字ずつ走査
+    if((ord(str[id])<0x20) && (ord(str[id])>0x7e)){
+      //もし印刷可能な文字でないなら、false
+      flag = false;
+      break;
+    }
+  }
+  return flag;
+}
+
+
 //-----------------------------------------------------------------------------
 // 画面表示
 //-----------------------------------------------------------------------------
-void demoScreen() {
-  cls();                                            // LCDをクリアする
-  locateXY(0,0); putStr("MP3 Player demo");
-  for (int i=1; i<=5; i=i+1) {                      // スイッチ1〜5に付いて
-    locateXY(2,i+1);
-    putCh(chr(ord('0')+i));                         // スイッチの番号
-    putStr(":");
-    char[] fname = mp3FilesGetName(i);              // 対応するファイル名
-    if (fname!=null) putStr(fname);
-  }
-  locateXY(2,7);
-  putStr("6:stop");                                 // 6番のスイッチ
-}
 
 
 void homeDisplay(){
   cls();
-  putLineH(0,0,8);
-  putLineH(15,0,8);
-  putLineW(1,0,9);
-  putLineW(1,7,9);
-  putLineW(11,0,4);
-  putLineW(11,7,4);
-  putDoubleLineH(10,0,8);
+  putLineH(0,0,8,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(1,7,9,false);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
+  putLineH(10,0,8,true);
   locateXY(2,1);
   putStr("PLAYMODE");
   locateXY(2,2);
@@ -121,14 +131,14 @@ void playmodeDisplay(){
   cls_block(0,0,16,6);
   cls_block(10,5,6,3);
 
-  putLineH(0,0,5);
-  putLineH(0,6,2);
-  putLineH(15,0,8);
-  putLineW(1,0,9);
-  putDoubleLineW(0,5,10);
-  putDoubleLineH(10,0,8);
-  putLineW(11,0,4);
-  putLineW(11,7,4);
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true);
+  putLineH(10,0,8,true);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
   locateXY(2,1);
   putStr("Artist");
   locateXY(2,2);
@@ -146,21 +156,21 @@ void playmode_music_Display(int n){
   cls_block(0,0,16,6);
   cls_block(10,5,6,3);
 
-  putLineH(0,0,5);
-  putLineH(0,6,2);
-  putLineH(15,0,8);
-  putLineW(1,0,9);
-  putDoubleLineW(0,5,10);
-  putDoubleLineH(10,0,8);
-  putLineW(11,0,4);
-  putLineW(11,7,4);
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true);
+  putLineH(10,0,8,true);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
 
   for(int i=0; i<3; i=i+1){
     //3曲分を取り出して画面に曲名を出す
     strCpy(display_name,index_list[n+i].music_name);
     dbgPutStr(index_list[n+i].music_name);
     dbgPutStr("\n");
-    if(display_name[0]!='\0'){
+    if(display_name[0]!='\0' && isPrint(display_name[0])){ //nullでなく、表示可能な文字列であれば
       if(strLen(display_name)>=8){ //8文字以上なら
         //8文字目に'...'を表示する
         display_name[8] = '\0';
@@ -180,8 +190,12 @@ void playmode_music_Display(int n){
 }
 
 
+artist_array_type[] artist_array = array(INDEX_SIZE);
+int qua_cnt = 0; //artarr_currentが参照するアーティスト名の個数をカウントする変数
+int artarr_current = 0; //artist_arrayの現在参照位置を格納する変数
+
 // /playmode/artistを選択した際に表示
-void playmode_artist_Display(int id){
+void playmode_artist_Display(){
   display_name = malloc(sizeof(char)*20);
 
   // それまでの情報を削除
@@ -190,26 +204,30 @@ void playmode_artist_Display(int id){
   cls_block(10,5,6,3);
 
   //枠線の表示
-  putLineH(0,0,5);
-  putLineH(0,6,2);
-  putLineH(15,0,8);
-  putLineW(1,0,9);
-  putDoubleLineW(0,5,10);
-  putDoubleLineH(10,0,8);
-  putLineW(11,0,4);
-  putLineW(11,7,4);
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true);
+  putLineH(10,0,8,true);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
 
-  //index_listからアーティスト情報を取ってくる
-  
+  for(int i=0; i<3; i=i+1){
+    if(qua_cnt==artist_array[artarr_current].quantity){
+      //個数が一致したら、次のアーティスト名を参照し始める
+    }
+    else if(qua_cnt==0){
+      //0個目を表示する際は、その前にアーティスト名を表示する
+      locateXY(1,1);
+      putStr(artist_array[artarr_current].art_name);
+    }
+  }
 
   free(display_name);
 }
 
-void asta(int y) {
-  demoScreen();
-  locateXY(0, y+1);
-  putCh('*');
-}
+
 
 void putCursor(int y){
   locateXY(1,y);
@@ -240,6 +258,16 @@ public void shellMain() {
   //4:  /playmode/music/
   //5:  /alarm/
   int state = 0;
+  
+  //optionの状態を記録する変数
+  //0:  optionなし
+  //1:  /playmode/artist/option0
+  //2:  /playmode/artist/option1
+  //3:  /playmode/album/option0
+  //4:  /playmode/album/option1
+  //5:  /playmode/music/option0
+  //6:  /playmode/music/option1
+  //int option_state = 0;
 
   //カーソルの位置を保持する変数
   //locateXY()で呼び出す座標と同じ。つまり、この値が1のとき初期値
@@ -252,7 +280,8 @@ public void shellMain() {
   homeDisplay();
   putCursor(cursor_pos);
   int sw;
-  int num;
+  int num; //スイッチの現在の状態の番号を格納
+  int last_num = 0; //一つ前に読み取ったスイッチの状態の番号を格納
   for(;;){
     sw = readSw();
     num = swToNum(sw);
@@ -294,6 +323,51 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
+      else if(cursor_pos==1 && num==3){ //右ボタンが押されたら(/playmode/artistが選択されたら)
+        //構造体配列領域の確保
+        for(int m=0; m<INDEX_SIZE; m=m+1){
+          artist_array[m] = malloc(sizeof(artist_array_type)*INDEX_SIZE);
+        }
+        for(int m=0; m<INDEX_SIZE; m=m+1){
+          artist_array[m].art_name = malloc(sizeof(char)*20);
+        }
+        FilesSort(3); //アーティスト名の降順でソートする
+        dbgPutStr("end sort");
+        dbgPutStr("\n");
+
+        //アーティスト名をアーティスト配列に抽出
+        //if((index_list[0].art_name!=null) && (isName(index_list[0].art_name))){
+        if(index_list[0].art_name!=null){
+          strCpy(artist_array[0].art_name, index_list[0].art_name); //////??????????????
+        }
+        else{
+          dbgPutStr("no artist name. please set tag.");
+          dbgPutStr("\n");
+        }
+        printF(artist_array[0].art_name);
+        printF("\n");
+        artist_array[0].quantity = 1;
+        int art_arr_id = 1;
+        for(int m=1; m<INDEX_SIZE; m=m+1){
+          if(strCmp(index_list[m].art_name, artist_array[art_arr_id].art_name) == 0){
+            //もし前にartist_arrayに入ってたやつと一致していたら、quantityを一つカウントアップする
+            artist_array[art_arr_id].quantity = artist_array[art_arr_id].quantity + 1;
+          }
+          else{
+            //artist_arrayに入っていないアーティスト名が検出されたら、それを新しく登録する
+            art_arr_id = art_arr_id + 1;
+            strCpy(artist_array[art_arr_id].art_name, index_list[m].art_name);
+            artist_array[art_arr_id].quantity = 1;
+          }
+        }
+
+        qua_cnt = 0;
+        // /playmode/artist/に遷移
+        state = 2;
+        playmode_artist_Display();
+        cursor_pos = 1;
+        putCursor(cursor_pos);
+      }
       else if(cursor_pos==2 && num==5){ //下ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos + 1;
@@ -319,6 +393,7 @@ public void shellMain() {
         //musicモードに遷移
         state = 4;
         cursor_pos = 1;
+        FilesSort(1); //index_listを降順にする
         strCpy(tmp,index_list[0].music_name);
         if(tmp!=null) playmode_music_Display(index_current);
         else{
@@ -339,8 +414,35 @@ public void shellMain() {
       }
     }
 
+  else if(state==2){ // /playmode/artist/
+    if(num==2){
+      //戻るボタンが押されたら
+      for(int m=0; m<INDEX_SIZE; m=m+1){
+        free(artist_array[m].art_name);
+      }
+      for(int m=0; m<INDEX_SIZE; m=m+1){
+        free(artist_array[m]);
+      }
+      state = 1;
+      playmodeDisplay();
+    }
+  }
+
     else if(state==4){ // /playmode/music/
       putCursor(cursor_pos);
+      if(cursor_pos==1 && num==1){ //上ボタンが押されたら
+        //存在していれば、カーソルの更新と前の三曲分の表示
+        if(index_current!= 0){
+          locateXY(1, cursor_pos);
+          putCh(' ');
+          cursor_pos = 4;
+          putCursor(cursor_pos);
+          if(index_list[index_current-3].music_name!=null){
+            index_current = index_current - 3;
+            playmode_music_Display(index_current);
+          }
+        }
+      }
       if(cursor_pos==1 && num==5){ //下ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos + 1;
@@ -453,6 +555,7 @@ public void shellMain() {
       }
       else if(num==2){ //戻るボタンが押されたら
         //playmodeの画面に戻る
+        index_current = 0;
         locateXY(1, cursor_pos);
         putCh(' ');
         state = 1;
@@ -469,26 +572,8 @@ public void shellMain() {
     }
 
     sleep(10);
+    last_num = num;
   }
-  /*
-  demoScreen();                                     // 画面を初期化
-  for (;;) {
-    int sw = readSw();
-    int num = swToNum(sw);
-    if (num==6) {                                   // 6 番のスイッチが押された
-      dbgPutStr("stop\n");
-      demoScreen();                                 // 画面を初期化
-      stop();
-    } else if (num>0 && mp3FilesGetName(num)!=null) { // ファイルと対応するボタン
-      demoScreen();                                 // 画面を初期化
-      asta(num);                                    // 再生中の曲に印を表示
-      play(files[num]);                   // 再生開始
-      dbgPutStr(files[num]);
-      dbgPutStr("\n");
-    }
-    sleep(10);                                      // 10ms に一度
-  }
-  */
   free(tmp);
   free(play_path);
 }

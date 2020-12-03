@@ -49,10 +49,10 @@ public void cls();                         // 画面のクリア
 // index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する変数配列
 
 public void cls_block(int x, int y, int width, int height);         //指定された範囲分、画面のクリア
-public void putLineW(int x, int y, int width);                      //横線の表示
-public void putLineH(int x, int y, int height);                     //縦線の表示
+public void putLineW(int x, int y, int width, boolean double);                      //横線の表示
+public void putLineH(int x, int y, int height, boolean double);                     //縦線の表示
 public void FilesSort(int mode);    //indexファイルにアクセスし、内容をソートして表示
 
 //新しく作りました関数
-public void putDoubleLineW(int x, int y, int width);
-public void putDoubleLineH(int x, int y, int height);
+//public void putDoubleLineW(int x, int y, int width);
+//public void putDoubleLineH(int x, int y, int height);
