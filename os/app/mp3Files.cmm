@@ -329,10 +329,7 @@ void TagsInit(){
     b = malloc(sizeof(char)*5);
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
-      dbgPutStr("start\n");
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
-      dbgPutStr(index_list[p].music_name);
-      dbgPutStr("\n");
       //タグ格納(初期値)
       strCpy(index_list[p].music_name, files[p]); //拡張子付き
       index_list[p].id = p;
@@ -351,61 +348,52 @@ void TagsInit(){
         panic("panic2:can't open MP3 files");
       }
       while(debugflag == false){
-        for(int q=0; q<100; q=q+1){
-          read(fp, buf, 1);
-          //5文字か6文字以上だとタグとくっついてしまう -> 何とかタグ部分と分ける必要がある
-          if(isPrint(buf[0]) == true && ord(buf[0]) != 0 && not_flag == false){
-            while(true){
-              if(isDigit(buf[0]) == true || isUpper(buf[0]) == true || isLower(buf[0]) == true){
-                tag_str[w] = buf[0];
-                w = w + 1;
-              }
-              read(fp, buf, 1);
-              if(isPrint(buf[0]) == false || ord(buf[0]) == 0){
-                break;
-              }
+        read(fp, buf, 1);
+        //5文字か6文字以上だとタグとくっついてしまう -> 何とかタグ部分と分ける必要がある
+        if(isPrint(buf[0]) == true && ord(buf[0]) != 0 && not_flag == false){
+          while(true){
+            if(isDigit(buf[0]) == true || isUpper(buf[0]) == true || isLower(buf[0]) == true){
+              tag_str[w] = buf[0];
+              w = w + 1;
             }
-            tag_str[w] = '\0';
-            //printF("%s:\n", tag_str);
-            if(w >= 5){ //文字数が長いとタグがくっついている可能性がある
-              for(int i=0; i<4; i=i+1){
-                tag_tmp[i] = tag_str[w-(4-i)];
-              }
-              //printF("tag=%s\n", tag_tmp);
-              if(strCmp(tag_tmp, "TPE1") == 0 || strCmp(tag_tmp, "TALB") == 0){
-                tag_str[w-4] = '\0';
-              }
-              tag_tmp[4] = '\0';
+            read(fp, buf, 1);
+            if(isPrint(buf[0]) == false || ord(buf[0]) == 0){
+              break;
             }
-            if(step == 1){
-              strCpy(index_list[p].art_name, tag_str);
-              step = 0;
-            } else if(step == 2){
-              strCpy(index_list[p].albam_name, tag_str);
-              step = 0;
-            }
-            if(strCmp(tag_str, "TPE1") == 0 || strCmp(tag_tmp, "TPE1") == 0){
-              //printF("artist_step\n");
-              tag_tmp[0] = '\0';
-              step = 1;
-            } else if(strCmp(tag_str, "TALB") == 0 || strCmp(tag_tmp, "TALB") == 0){
-              //printF("albam_step\n");
-              tag_tmp[0] = '\0';
-              step = 2;
-            } if(tag_str[0]=='I' && tag_str[1]=='D' && tag_str[2]=='3'){
-              //printF("Id3tag exist\n");
-              id_flag = true;
-            } 
-            if(id_flag == false){
-              //printF("not ID3tag\n");
-              not_flag = true;
-              tag_str[0] = '\0';
-            }
-            w = 0;
           }
+          tag_str[w] = '\0';
+          if(w >= 5){ //文字数が長いとタグがくっついている可能性がある
+            for(int i=0; i<4; i=i+1){
+              tag_tmp[i] = tag_str[w-(4-i)];
+            }
+            if(strCmp(tag_tmp, "TPE1") == 0 || strCmp(tag_tmp, "TALB") == 0){
+              tag_str[w-4] = '\0';
+            }
+            tag_tmp[4] = '\0';
+          }
+          if(step == 1){
+            strCpy(index_list[p].art_name, tag_str);
+            step = 0;
+          } else if(step == 2){
+            strCpy(index_list[p].albam_name, tag_str);
+            step = 0;
+          }
+          if(strCmp(tag_str, "TPE1") == 0 || strCmp(tag_tmp, "TPE1") == 0){
+            tag_tmp[0] = '\0';
+            step = 1;
+          } else if(strCmp(tag_str, "TALB") == 0 || strCmp(tag_tmp, "TALB") == 0){
+            tag_tmp[0] = '\0';
+            step = 2;
+          } if(tag_str[0]=='I' && tag_str[1]=='D' && tag_str[2]=='3'){
+            id_flag = true;
+          } 
+          if(id_flag == false){
+            not_flag = true;
+            tag_str[0] = '\0';
+          }
+          w = 0;
+          printF("%s / %s \n", index_list[p].art_name, index_list[p].albam_name);
         }
-        printF("%s / %s \n", index_list[p].art_name, index_list[p].albam_name);
-        break;
         if(ord(buf[0])==255){
           read(fp, buf, 1);
           printF("c=%d\n", buf[0]);
@@ -416,18 +404,14 @@ void TagsInit(){
           //B:version
           subCpy(b, bin_tmp_1, 3, 2);
           if(strCmp(b, "00") == 0){
-              printF("version2.5\n");
               tag.version_id = '3';
           } else if(strCmp(b, "01") == 0){
-              printF("not used\n");
+              ;
           } else if(strCmp(b, "10") == 0){
-              printF("version2.0\n");
               tag.version_id = '2';
           } else if(strCmp(b, "11") == 0){
-              printF("version1.0\n");
               tag.version_id = '1';
           } else{
-              printF("nothing\n");
               tag.version_id = '0';
           }
           printF("%c\n", tag.version_id);
@@ -435,16 +419,12 @@ void TagsInit(){
           //C:layer
           subCpy(b, bin_tmp_1, 5, 2);
           if(strCmp(b, "00") == 0){
-              printF("not used\n");
               tag.layer_id = '0'; //not used
           } else if(strCmp(b, "01") == 0){
-              printF("layer3\n");
               tag.layer_id = '3';
           } else if(strCmp(b, "10") == 0){
-              printF("layer2\n");
               tag.layer_id = '2';
           } else if(strCmp(b, "11") == 0){
-              printF("layer1\n");
               tag.layer_id = '1';
           } else{
               printF("nothing\n");
@@ -462,7 +442,6 @@ void TagsInit(){
           subCpy(b, bin_tmp_1, 0, 4);
           int bin_num = 0;
           int len = 3;
-          printF("len=%d\n", len);
           //binary -> decimal
           for(int i=0;i<=len;i=i+1){
               printF("c=%c\n", b[len-i]);
@@ -471,7 +450,6 @@ void TagsInit(){
               }
           }
           printF("bin_num=%d\n",bin_num);
-          printF("%d\n", ord(tag.layer_id)-ord('0'));
           if(tag.version_id == '1'){
               tag.bit_rate = bit_rate_table_1[bin_num][ord(tag.layer_id)-ord('0')-1];
           } else if(tag.version_id == '2' || tag.version_id == '3'){
@@ -488,7 +466,6 @@ void TagsInit(){
                   sampling_num = sampling_num + bin_p[i];
               }
           }
-          printF("sampling_num=%d\n", sampling_num);
           if(tag.version_id != '0'){
               tag.sampling_h = sample_rate[sampling_num][ord(tag.version_id)-ord('0')-1];
           }
@@ -498,21 +475,17 @@ void TagsInit(){
           char b1 = bin_tmp_1[6];
           printF("%c\n",b1);
           if(b1 == '0'){
-              printF("not padding\n");
               tag.padding = '0';
           } else{
-              printF("expand byte\n");
               tag.padding = '1';
           }
           if(gcd(tag.bit_rate*10, tag.sampling_h) > 0){
             quo_1 = gcd(tag.bit_rate*10, tag.sampling_h);//最大公約数
           }
-          printF("quo1=%d\n", quo_1);
           if(tag.layer_id == '1'){
             if(gcd(12, tag.sampling_h/quo_1) > 0){
               quo_2 = gcd(12, tag.sampling_h/quo_1);
             }
-            printF("quo2=%d\n", quo_2);
             frame_size = (((12 / quo_2)*(tag.bit_rate*10 / quo_1) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0')))*4;
             //frame_size = ((12*tag.bit_rate*1000 / tag.sampling_h) + (ord(tag.padding) - ord('0')))*4;
           } else if(tag.layer_id == '2' || tag.layer_id == '3'){
@@ -520,7 +493,6 @@ void TagsInit(){
                 if(gcd(144, tag.sampling_h/quo_1) > 0){
                   quo_2 = gcd(144, tag.sampling_h/quo_1);
                 }
-                printF("quo2=%d\n", quo_2);
                 frame_size = (((144 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
                 //frame_size = ((144*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
               }
@@ -528,7 +500,6 @@ void TagsInit(){
             if(gcd(72, tag.sampling_h/quo_1) > 0){
               quo_2 = gcd(72, tag.sampling_h/quo_1);
             }
-            printF("quo2=%d\n", quo_2);
             frame_size = (((72 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
             //frame_size = ((72*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
           }
@@ -570,20 +541,13 @@ void TagsInit(){
           sum = sum + subRound(tag.frame_cnt, 1000) * (func_cal(func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h), tag.sampling_h) / tag.sampling_h);
           tag.play_time = sum / 100;
           printF("time=%d\n", tag.play_time);
+          index_list[p].song_len = tag.play_time;
           //tag.play_time = tag.frame_cnt*(1152/tag.sampling_h);
           tag.frame_cnt = 0;
 
           break;
         }
       }
-      printF("%d\n\n", tag.frame_cnt);
-      //...フレーム取得...//
-      //...再生時間算出...//
-      //...タグ情報取得...//
-      //index_list[i].song_len = play_time;
-      //index_list[i].art_name = artist_name;
-      //index_list[i].id = i;
-
       close(fp);
     }
     free(b);
