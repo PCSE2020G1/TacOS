@@ -95,7 +95,7 @@ public int swToNum(int sw) {
 boolean isName(char[] str){
   boolean flag = true;
   for(int id=0; id<strLen(str); id=id+1){ //1文字ずつ走査
-    if((ord(str[id])<0x20) && (ord(str[id])>0x7e)){
+    if(!isPrint(str[id])){
       //もし印刷可能な文字でないなら、false
       flag = false;
       break;
@@ -170,9 +170,9 @@ void playmode_music_Display(int n){
   for(int i=0; i<3; i=i+1){
     //3曲分を取り出して画面に曲名を出す
     strCpy(display_name,index_list[n+i].music_name);
-    dbgPutStr(index_list[n+i].music_name);
+    dbgPutStr(display_name);
     dbgPutStr("\n");
-    if(display_name[0]!='\0' && isPrint(display_name[0])){ //nullでなく、表示可能な文字列であれば
+    if(display_name[0]!='\0' && isName(display_name)){ //nullでなく、表示可能な文字列であれば
       if(strLen(display_name)>=8){ //8文字以上なら
         //8文字目に'...'を表示する
         display_name[8] = '\0';
@@ -340,6 +340,8 @@ public void shellMain() {
         //アーティスト名をアーティスト配列に抽出
         //if((index_list[0].art_name!=null) && (isName(index_list[0].art_name))){
         if(index_list[0].art_name!=null){
+          printF(index_list[0].art_name);
+          printF("\n");
           strCpy(artist_array[0].art_name, index_list[0].art_name); //////??????????????
         }
         else{
@@ -439,13 +441,13 @@ public void shellMain() {
           putCh(' ');
           cursor_pos = 4;
           putCursor(cursor_pos);
-          if(index_list[index_current-3].music_name!=null){
+          if(index_list[index_current-3].music_name!=null && isName(index_list[index_current-3].music_name)){
             index_current = index_current - 3;
             playmode_music_Display(index_current);
           }
         }
       }
-      if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+      else if(cursor_pos==1 && num==5){ //下ボタンが押されたら
         //カーソル位置の更新
         cursor_pos = cursor_pos + 1;
         locateXY(1, cursor_pos-1);
@@ -550,7 +552,8 @@ public void shellMain() {
         putCh(' ');
         cursor_pos = 1;
         putCursor(cursor_pos);
-        if(index_list[index_current+3].music_name!=null){
+        if((index_list[index_current+3].music_name!=null) && isName(index_list[index_current+3].music_name)){
+          printF("next page\n");
           index_current = index_current + 3;
           playmode_music_Display(index_current);
         }
@@ -565,11 +568,20 @@ public void shellMain() {
         playmodeDisplay();
         putCursor(cursor_pos);
       }
-      else if(num==4){ //音量調節(テスト用)
-        if(valume < 0x6060){    
-          valume = valume + 0x1010; //音量を上げる
+    }
+
+    if(num==4){
+      //音量上げる
+      if(valume+0x0404 < 0x6060){    
+          valume = valume + 0x0404; //音量を上げる
           spiWriteMp3Reg(0x0b, 0x6060-valume);
-        }
+      }
+    }
+    else if(num==6){
+      //音量下げる
+      if(valume-0x0404 > 0x0000){    
+          valume = valume - 0x0404; //音量を下げる
+          spiWriteMp3Reg(0x0b, 0x6060-valume);
       }
     }
 

@@ -348,7 +348,7 @@ void TagsInit(){
             for(int i=0; i<4; i=i+1){
               tag_tmp[i] = tag_str[w-(4-i)];
             }
-            if(strCmp(tag_tmp, "TPE1") == 0 || strCmp(tag_tmp, "TALB") == 0){
+            if(strCmp(tag_tmp, "TPE1") == 0 || (strCmp(tag_tmp, "TALB") == 0 || strCmp(tag_tmp, "TPE2") == 0)){
               tag_str[w-4] = '\0';
             }
             tag_tmp[4] = '\0';
