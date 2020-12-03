@@ -26,6 +26,10 @@
  * 2020.11.20 : filesをpublic化
  * 2020.11.25 : numFileをpublic化
  * 2020.11.27 : subCatをpublic化
+ * 2020.12.01 : func_atoiをpublic化
+ *              インデックスファイル構造体をmp3Files.cmmに移動
+ *              index_typeにalbam_name(アルバム名)を追加
+ * 2020.12.03 : func_itoaをpublic化
  *
  * $Id$
  *
@@ -37,6 +41,8 @@ public int numFile;
 public void mp3FilesInit();               // 初期化（ファイル一覧を作る）
 public char[] mp3FilesGetName(int n);     // n 番目ファイル名を返す
 public char[] subCat(char[] cat_s, char[] src);
+public int func_atoi(char[] str, int len);
+public char[] func_itoa(int a);
 //public char[] mp3FilesGetPath(int n);     // n 番目パス名を返す
 
 
@@ -48,6 +54,7 @@ struct index_type{
     int id;
     int play_cnt;
     char[] art_name;
+    char[] albam_name;
     int song_len;
 };
 

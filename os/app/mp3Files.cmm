@@ -32,6 +32,10 @@
  *              func_cal(), func_atoi, dtob(), subRound()追加
  * 2020.11.30 : csvファイル読み込み処理追加
  *              debugflag追加(フレームカウント処理は結構時間がかかるため他デバッグの時はスキップ)
+ * 2020.12.01 : アーティスト情報などを取得する部分を追加(未完成)
+ * 2020.12.02 : タグ情報取得部分完成
+ *              func_itoa()追加
+ *              printF文の削除
  *
  * $Id$
  *
@@ -42,26 +46,22 @@
 #include <mm.hmm>
 #include "appUtil.hmm"
 #include "mp3Files.hmm"
-//#include "lcd.hmm"
 
 
-#define N 64 //indexファイルの1行の最大サイズ
 #define MUSIC_NAME_SIZE 20 //曲名のサイズ
 #define ART_NAME_SIZE 20 //アーティスト名のサイズ
+#define ALBAM_NAME_SIZE 20 //アーティスト名のサイズ
+#define func_cal(a, s) ((a % s)*10)
 
 
 char[] str_line = array(32); //1行読み込む一時変数
 char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル名を格納する一次変数
-char[] artist_name = array(ART_NAME_SIZE); //アーティスト名を格納する一次変数
-
+char[] tag_str = array(10);
+char[] tag_tmp = array(5);
 char[] buf = array(32);
-boolean debugflag = true; //スキップ用のフラグ true:skip false:execute
 
-//char tag[4][5] = {"TPE1", "TPE2", "TIT2", "TIT3"};
-char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            'a', 'b', 'c', 'd', 'e', 'f'};
-char[][] bin = {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001",
-                "1010", "1011", "1100", "1101", "1110", "1111"};
+boolean debugflag = false; //スキップ用のフラグ true:skip false:execute
+
 int[] bin_p = {1, 2, 4, 8};
 int[][] bit_rate_table_1 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
@@ -72,12 +72,11 @@ int[][] bit_rate_table_2 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 0}}; //int型は16bit(signed)なので、下二桁を落とす
-//int[][] sample_rate = {{44100, 22050, 11025}, {48000, 24000, 12000}, {32000, 16000, 8000}, {0, 0, 0}};
 
-char[] bin_tmp_1, bin_tmp_2 = array(10);
+char[] bin_tmp_1 = array(10);
 char[] b = array(5);
 
-public index_type[] index_list = array(INDEX_SIZE);
+public index_type[] index_list = array(INDEX_SIZE); //構造体配列の静的メモリ確保
 
 //構造体
 struct mp3_tag {
@@ -87,7 +86,6 @@ struct mp3_tag {
     int sampling_h;
     char padding;
     int frame_cnt;
-    int play_time;
 };
 
 
@@ -106,7 +104,7 @@ void TagsInit();
 public void mp3FilesInit() {
   int fd;                                           // ファイルディスクリプタ
   if ((fd=open(mp3Dir, READ_MODE))<0) {
-    panic("panic1:can't open MP3 Dir debug");
+    panic("panic1:can't open MP3 Dir");
   }
   Dir_i dir; //appUtil.hmmで宣言されている
   //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
@@ -132,30 +130,18 @@ public char[] mp3FilesGetName(int n) {
 }
 
 
-//str[]の要素前delete_size個分の要素を削除し、前に詰める関数
-char[] deleteStr(char[] str, int delete_size){
-    int j = 0;
-    for(int i=delete_size; i<strLen(str); i=i+1){
-        str[j] = str[i];
-        j = j+1;
-    }
-    return str;
-}
-
-
 void subCpy(char[] target, char[] ori, int index, int n){
     for(int i=0;i<n;i=i+1){
         target[i] = ori[i+index];
     }
     target[n] = '\0';
-    printF("b=%s\n",target);
     return;
 }
 
 
 //appUtil.cmmにあるstrCatを使うとうまく動かなかったので自作
 public char[] subCat(char[] cat_s, char[] src){
-  char[] s = malloc(sizeof(char)*128);
+  char[] s = malloc(sizeof(char)*32);
   int c_num = strLen(cat_s);
   int s_num = strLen(src);
   strCpy(s, cat_s);
@@ -194,7 +180,6 @@ int gcd(int a, int b){
 void dtob(char[] binary, int decimal){
     int i;
     for(i=7;decimal>0; i=i-1){
-        //printF("%c\n", chr((decimal%2)+ord('0')));
         binary[i] = chr((decimal%2)+ord('0'));
         decimal = decimal/2;
     }
@@ -204,12 +189,6 @@ void dtob(char[] binary, int decimal){
         }
     }
     binary[8] = '\0';
-}
-
-
-//計算簡略化のための関数
-int func_cal(int a, int s){
-    return (a % s)*10;
 }
 
 
@@ -223,7 +202,7 @@ int subRound(int a, int d){
 
 
 //_AtoI()が謎だったので似たような関数を作成 ascii -> int
-int func_atoi(char[] str, int len){
+public int func_atoi(char[] str, int len){
   int tmp, sum = 0;
   for(int i=0; len>0; i=i+1){
     tmp = ord(str[i]) - ord('0');
@@ -237,13 +216,46 @@ int func_atoi(char[] str, int len){
 }
 
 
+//_ItoAもよくわからなかったため似た関数を作成 int -> ascii
+public char[] func_itoa(int a){
+  char[] str = malloc(sizeof(char)*5);
+  if(48 <= (a+ord('0')) && (a+ord('0')) <= 57){ //0~9ならば
+      str[0] = chr(a+ord('0'));
+      str[1] = '\0';
+      return str;
+  } else{ //10以上
+      int cnt = 0, q = a, i;
+      while(q > 10){ //桁数
+          q = q / 10;
+          cnt = cnt + 1;
+      }
+      str[0] = chr(q+ord('0'));
+      q = a;
+      for(i=1; i<cnt; i=i+1){
+          for(int t=0; t<(cnt-i); t=t+1){
+              q = q / 10;
+          }
+          q = q%10;
+          str[i] = chr(q+ord('0'));
+          q = a;
+      }
+      int ama = a%10;
+      str[i] = chr(ama+ord('0'));
+      str[i+1] = '\0';
+      return str;
+  }
+  free(str);
+  return "0";
+}
+
+
 void TagsInit(){
   int fp;
   int frame_size;
   int step = 0;
   mp3_tag tag;
-  tag = malloc(sizeof(mp3_tag));
-  str_line = malloc(sizeof(char)*32);
+  boolean id_flag = false, not_flag = false;
+
 
   //構造体リストの動的確保
   for(int i=0; i<INDEX_SIZE; i=i+1){
@@ -253,8 +265,10 @@ void TagsInit(){
   for(int i=0; i<INDEX_SIZE; i=i+1){
       index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
       index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
+      index_list[i].albam_name = malloc(sizeof(char)*ALBAM_NAME_SIZE);
   }
   if((fp=open("index.csv", READ_MODE))>=0){ //インデックスファイルが存在したら
+    str_line = malloc(sizeof(char)*32);
     //最初の行は空読み
     read(fp, buf, 31);
 
@@ -290,158 +304,174 @@ void TagsInit(){
     }
     free(str_line);
   } else{ //インデックスファイルが存在しない(初期起動)
+    tag = malloc(sizeof(mp3_tag));
+    tag_str = malloc(sizeof(char)*10);
+    tag_tmp = malloc(sizeof(char)*5);
+    bin_tmp_1 = malloc(sizeof(char)*10);
+    b = malloc(sizeof(char)*5);
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
-      dbgPutStr("start\n");
-      strCpy(index_list[p].music_name, files[p]); //拡張子付き(削除する部分を後で作る)
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
-      dbgPutStr(index_list[p].music_name);
-      dbgPutStr("\n");
+      //タグ格納(初期値)
+      strCpy(index_list[p].music_name, files[p]); //拡張子付き
+      index_list[p].id = p;
+      strCpy(index_list[p].art_name, "NO_NAME"); //アーティスト名が決められていたら更新
+      strCpy(index_list[p].albam_name, "NONE"); //アルバム名が決められていたら更新
+      index_list[p].play_cnt = 0;
+      //
       tag.sampling_h = 0;
       int quo_1 = 1, quo_2 = 1;
+      int w = 0;
+      id_flag = false;
+      not_flag = false;
+
       
       if ((fp=open(file_mp3, READ_MODE))<0) {
         panic("panic2:can't open MP3 files");
       }
-      while((read(fp, buf, 1))==1 && debugflag == false){
+      while(debugflag == false){
+        read(fp, buf, 1);
+        //5文字か6文字以上だとタグとくっついてしまう -> 何とかタグ部分と分ける必要がある
+        if(isPrint(buf[0]) == true && ord(buf[0]) != 0 && not_flag == false){
+          while(true){
+            if(isDigit(buf[0]) == true || isUpper(buf[0]) == true || isLower(buf[0]) == true){
+              tag_str[w] = buf[0];
+              w = w + 1;
+            }
+            read(fp, buf, 1);
+            if(isPrint(buf[0]) == false || ord(buf[0]) == 0){
+              break;
+            }
+          }
+          tag_str[w] = '\0';
+          if(w >= 5){ //文字数が長いとタグがくっついている可能性がある
+            for(int i=0; i<4; i=i+1){
+              tag_tmp[i] = tag_str[w-(4-i)];
+            }
+            if(strCmp(tag_tmp, "TPE1") == 0 || strCmp(tag_tmp, "TALB") == 0){
+              tag_str[w-4] = '\0';
+            }
+            tag_tmp[4] = '\0';
+          }
+          if(step == 1){
+            strCpy(index_list[p].art_name, tag_str);
+            step = 0;
+          } else if(step == 2){
+            strCpy(index_list[p].albam_name, tag_str);
+            step = 0;
+          }
+          if(strCmp(tag_str, "TPE1") == 0 || strCmp(tag_tmp, "TPE1") == 0){
+            tag_tmp[0] = '\0';
+            step = 1;
+          } else if(strCmp(tag_str, "TALB") == 0 || strCmp(tag_tmp, "TALB") == 0){
+            tag_tmp[0] = '\0';
+            step = 2;
+          } if(tag_str[0]=='I' && tag_str[1]=='D' && tag_str[2]=='3'){
+            id_flag = true;
+          } 
+          if(id_flag == false){
+            not_flag = true;
+            tag_str[0] = '\0';
+          }
+          w = 0;
+        }
         if(ord(buf[0])==255){
-          bin_tmp_1 = malloc(sizeof(char)*10);
-          bin_tmp_2 = malloc(sizeof(char)*10);
-          b = malloc(sizeof(char)*5);
-
           read(fp, buf, 1);
-          printF("c=%d\n", buf[0]);
           //decimal -> binary
           dtob(bin_tmp_1, ord(buf[0]));
           //
-          printF("bin_8=%s\n", bin_tmp_1);
           //B:version
           subCpy(b, bin_tmp_1, 3, 2);
           if(strCmp(b, "00") == 0){
-              printF("version2.5\n");
               tag.version_id = '3';
           } else if(strCmp(b, "01") == 0){
-              printF("not used\n");
+              ;
           } else if(strCmp(b, "10") == 0){
-              printF("version2.0\n");
               tag.version_id = '2';
           } else if(strCmp(b, "11") == 0){
-              printF("version1.0\n");
               tag.version_id = '1';
           } else{
-              printF("nothing\n");
               tag.version_id = '0';
           }
-          printF("%c\n", tag.version_id);
           //
           //C:layer
           subCpy(b, bin_tmp_1, 5, 2);
           if(strCmp(b, "00") == 0){
-              printF("not used\n");
               tag.layer_id = '0'; //not used
           } else if(strCmp(b, "01") == 0){
-              printF("layer3\n");
               tag.layer_id = '3';
           } else if(strCmp(b, "10") == 0){
-              printF("layer2\n");
               tag.layer_id = '2';
           } else if(strCmp(b, "11") == 0){
-              printF("layer1\n");
               tag.layer_id = '1';
-          } else{
-              printF("nothing\n");
           }
-          printF("%c\n", tag.layer_id);
           //
           //next header(third)
           read(fp, buf, 1);
           //decimal -> binary
           dtob(bin_tmp_1, ord(buf[0]));
           //
-          printF("bin_8=%s\n", bin_tmp_1);
-          //
           //E:bit rate
           subCpy(b, bin_tmp_1, 0, 4);
           int bin_num = 0;
-          int len = 3;
-          printF("len=%d\n", len);
           //binary -> decimal
-          for(int i=0;i<=len;i=i+1){
-              printF("c=%c\n", b[len-i]);
-              if(b[len-i]=='1'){
+          for(int i=0;i<=3;i=i+1){
+              if(b[3-i]=='1'){
                   bin_num = bin_num + bin_p[i];
               }
           }
-          printF("bin_num=%d\n",bin_num);
-          printF("%d\n", ord(tag.layer_id)-ord('0'));
           if(tag.version_id == '1'){
               tag.bit_rate = bit_rate_table_1[bin_num][ord(tag.layer_id)-ord('0')-1];
           } else if(tag.version_id == '2' || tag.version_id == '3'){
               tag.bit_rate = bit_rate_table_2[bin_num][ord(tag.layer_id)-ord('0')-1];
           }
-          printF("bit_rate=%d\n", tag.bit_rate);
           //
           //F:sampling rate
           subCpy(b, bin_tmp_1, 4, 2);
           int sampling_num = 0;
-          len = 1;
-          for(int i=0;i<=len;i=i+1){
-              if(b[len-i]=='1'){
+          for(int i=0;i<=1;i=i+1){
+              if(b[1-i]=='1'){
                   sampling_num = sampling_num + bin_p[i];
               }
           }
-          printF("sampling_num=%d\n", sampling_num);
           if(tag.version_id != '0'){
               tag.sampling_h = sample_rate[sampling_num][ord(tag.version_id)-ord('0')-1];
           }
-          printF("sampling_h=%d\n", tag.sampling_h);
           //
           //G:padding
           char b1 = bin_tmp_1[6];
           printF("%c\n",b1);
           if(b1 == '0'){
-              printF("not padding\n");
               tag.padding = '0';
           } else{
-              printF("expand byte\n");
               tag.padding = '1';
           }
           if(gcd(tag.bit_rate*10, tag.sampling_h) > 0){
             quo_1 = gcd(tag.bit_rate*10, tag.sampling_h);//最大公約数
           }
-          printF("quo1=%d\n", quo_1);
           if(tag.layer_id == '1'){
             if(gcd(12, tag.sampling_h/quo_1) > 0){
               quo_2 = gcd(12, tag.sampling_h/quo_1);
             }
-            printF("quo2=%d\n", quo_2);
             frame_size = (((12 / quo_2)*(tag.bit_rate*10 / quo_1) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0')))*4;
-            //frame_size = ((12*tag.bit_rate*1000 / tag.sampling_h) + (ord(tag.padding) - ord('0')))*4;
           } else if(tag.layer_id == '2' || tag.layer_id == '3'){
               if(tag.version_id == '1'){
                 if(gcd(144, tag.sampling_h/quo_1) > 0){
                   quo_2 = gcd(144, tag.sampling_h/quo_1);
                 }
-                printF("quo2=%d\n", quo_2);
                 frame_size = (((144 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
-                //frame_size = ((144*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
               }
           } else if(tag.layer_id == '3' && tag.version_id == '3'){
             if(gcd(72, tag.sampling_h/quo_1) > 0){
               quo_2 = gcd(72, tag.sampling_h/quo_1);
             }
-            printF("quo2=%d\n", quo_2);
             frame_size = (((72 / quo_2)*(tag.bit_rate*10 / quo_1)) / ((tag.sampling_h / quo_1) / quo_2)) + (ord(tag.padding) - ord('0'));
-            //frame_size = ((72*tag.bit_rate*1000) / tag.sampling_h) + (ord(tag.padding) - ord('0'));
           }
           //
-          printF("frame_size=%d\n", frame_size);
           //next frame
           for(int i=0;i<=frame_size-3;i=i+1){
               read(fp, buf, 1);
-              //printF("f=%x\n", buf[0]);
           }
-          //printF("=======%x\n", buf[0]);
           while(true){
             tag.frame_cnt = tag.frame_cnt + 1;
             read(fp, buf, 1);
@@ -449,9 +479,8 @@ void TagsInit(){
               printF("finish\n");
               break;
             }
-            int loop = (frame_size-1)/32;
             int one_loop = (frame_size-1)%32;
-            for(int i=0;i<loop;i=i+1){
+            for(int i=0;i<((frame_size-1)/32);i=i+1){
               read(fp, buf, 32);
               if(i==0){
                 dtob(bin_tmp_1, ord(buf[0]));
@@ -464,34 +493,20 @@ void TagsInit(){
               read(fp, buf, 1);
             }
           }
-
-          free(b);
-          free(bin_tmp_1);
-          free(bin_tmp_2);
-
-          printF("frame_cnt=%d\n", tag.frame_cnt);
           int sum = tag.frame_cnt * (1152 / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 10) * (func_cal(1152, tag.sampling_h) / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 100) * (func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h) / tag.sampling_h);
           sum = sum + subRound(tag.frame_cnt, 1000) * (func_cal(func_cal(func_cal(1152, tag.sampling_h), tag.sampling_h), tag.sampling_h) / tag.sampling_h);
-          tag.play_time = sum / 100;
-          printF("time=%d\n", tag.play_time);
-          //tag.play_time = tag.frame_cnt*(1152/tag.sampling_h);
+          index_list[p].song_len = sum / 100;
           tag.frame_cnt = 0;
 
           break;
         }
       }
-      printF("%d\n\n", tag.frame_cnt);
-      //...フレーム取得...//
-      //...再生時間算出...//
-      //...タグ情報取得...//
-      //index_list[i].song_len = play_time;
-      //index_list[i].art_name = artist_name;
-      //index_list[i].id = i;
-
       close(fp);
     }
+    free(b);
+    free(bin_tmp_1);
+    free(tag);
   }
-  free(tag);
 }
