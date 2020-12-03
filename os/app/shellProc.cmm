@@ -280,7 +280,12 @@ public void shellMain() {
       else if(cursor_pos==2 && num==3){ //横ボタンが押されたら(alarmが選択されたら)
         //アラームモードに移行
         state = 5;
-        // alarm();   //ここでアラーム関数を呼ぶ(未実装)
+        boolean alarmflag = alarm();   //ここでアラーム関数を呼ぶ(未実装)
+        printF("return shell\n");
+        if(alarmflag==false){
+          state = 0;
+          homeDisplay();
+        }
       }
     }
 
@@ -427,7 +432,6 @@ public void shellMain() {
     }
 
     sleep(10);
->>>>>>> origin/develop
   }
   /*
   demoScreen();                                     // 画面を初期化

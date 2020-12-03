@@ -20,4 +20,5 @@
  */
 
 public boolean alarm();
-public void timer1s();
+public void down_timer();
+public interrupt timerHdr();

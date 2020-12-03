@@ -48,13 +48,15 @@
 #define M 30
 
 int alarmtime;                              //カウントダウンする時間を持つ
+char[] fullname = array(N);
 char[] filename1 = array(N);
 char[] filename2 = array(N);
 char[] filename3 = array(N);
-char[] mu_path = array(M);
 char[] music_path = array(M);
 int minute = 0;
 int second = 0;
+int countdown = 0;
+boolean Hdr = false;
 boolean set = false;              //0=minute,1=second
 boolean music = false;            //0=無音,1=有音
 boolean alarmflag = false;
@@ -69,29 +71,54 @@ public void timelcd(){
   putCh(':');
   locateXY(6,3);
   putDec(second,2);
+  if(set==false){
+    cls_block(4,4,5,1);
+    locateXY(4,4);
+    putCh('^');
+    printF("分\n");
+  }
+  else if(set==true){
+    cls_block(4,4,5,1);
+    locateXY(7,4);
+    putCh('^');
+    printF("秒\n");
+  }
 }
 
-//1秒タイマー
-public void timer1s(){
-  minute=1;
-  second=5;
+
+interrupt timerHdr(){       //タイマー割り込みハンドラ
+  countdown = countdown - 1;
+  in(0x06);
+  Hdr=true;
+}
+
+//タイマー
+public void down_timer(){      //カウントダウン用の画面が必要
   timelcd();
-  int timer = minute * 60 + second;
-  for(int i=0; i<timer; i=i+1){  //指定秒数回
-    for(int k=0; k<10; k=k+1){   //1s=0.1s*10回
-      out(0x00,0x64); //0番地に100ms(=0.1s)
-    }
-    if(minute!=0 && second==0){
-      minute=minute-1;
-      second=59;
+  countdown = minute * 60 + second;
+  countdown = countdown * 10;            //0.1sを10周で1sにするための10*
+
+  int[] vect = _ItoA(0xffe0);    //vectは割り込みベクタの配列
+  vect[1] = addrof(timerHdr);    //vect[1]はタイマー割り込みのベクタ
+  out(0x0004,100);                //0.1sの周期設定
+  out(0x0006,0x8001);                //割り込み許可
+  for(;;){
+    if(countdown==0){
+      second = 0;
       timelcd();
-    }
-    else if(minute==0 && second==0){
+      out(0x06,0x00);
       break;
     }
-    else{
-      second = second - 1;
+    else if(Hdr==true && countdown%10==0){
+      if(minute!=0 && second<=0){
+        minute=minute-1;
+        second=59;
+      }
+      else{
+        second=second-1;
+      }
       timelcd();
+      Hdr=false;
     }
   }
 }
@@ -112,33 +139,63 @@ public void configtime(){    //時間入力画面をlcdへ
   putDec(second,2);
   locateXY(9,3);
   putStr("SET");
+  cls_block(4,4,5,1);
+  locateXY(4,4);
+  putCh('^');
 
-  for(;;){
+  for(;;){                   //false=minute/true=second
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
     if(set==false && num==1 ){    //上なら
-      minute=minute+1;
-      timelcd();
+      if(minute==59){
+        minute=59;
+        timelcd();
+      }
+      else{
+        minute=minute+1;
+        timelcd();
+      }
     }
     else if(set==false && num==5 ){  //下なら
-      minute=minute-1;
-      timelcd();
+      if(minute==0){
+        minute=0;
+        timelcd();
+      }
+      else{
+        minute=minute-1;
+        timelcd();
+      }
     }
     else if(set==true && num==1 ){   //上なら
-      second=second+1;
-      timelcd();
+      if(second==59){
+        minute=minute+1;
+        second=0;
+        timelcd();
+      }
+      else{
+        second=second+1;
+        timelcd();
+      }
     }
     else if(set==true && num==5 ){   //下なら
-      second=second-1;
-      timelcd();
+      if(second==0){
+        second=0;
+        timelcd();
+      }
+      else{
+        second=second-1;
+        timelcd();
+      }
     }
     else if(set==false && num==3 ){   //min右
       set=true;
+      timelcd();
     }
     else if(set==true && num==2 ){   //sec左
       set=false;
+      timelcd();
     }
-    else if(set==true && num==3 ){   //sec右
+    else if(set==true && num==6 ){   //sec右
       break;                  //時間確定
     }
   }
@@ -168,19 +225,12 @@ public boolean alarm(){
   filename1 = malloc(sizeof(char)*N);
   filename2 = malloc(sizeof(char)*N);
   filename3 = malloc(sizeof(char)*N);
-  mu_path = malloc(sizeof(char)*M);
+  fullname = malloc(sizeof(char)*N);
   music_path = malloc(sizeof(char)*M);
-  ////////////
-  locateXY(1,2);
-  putStr("HelloWorld");
-  printF("HelloWorld");
-  ////////////
-  FilesSort(0);       //mode0
+  FilesSort(1);       //mode1
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
-    locateXY(1,3);
-    putStr("HelloHello");
 
     if(i!=numFile && num==5 ){               //下ボタン
       i=i+1;
@@ -189,18 +239,17 @@ public boolean alarm(){
       i=i-1;
     }
     else if(num==3){              //曲を選択したら
-      configtime();
+      configtime();         //----------------------時間指定
+      down_timer();         //----------------------カウントダウン
       break;
-    }
-    else{
-    i=i+0;
     }
 
     strCpy(filename1,index_list[i].music_name);
+    strCpy(fullname,index_list[i].music_name);
     if(filename1!=null){         //曲名が存在するか
-      cls_block(1,2,8,1);
-      locateXY(1,2);
-      if(strLen(filename1)<=16){  //文字数*2で返ってくる
+      cls_block(2,1,8,1);
+      locateXY(2,1);
+      if(strLen(filename1)<=8){  //文字数*2で返ってくる
         putStr(filename1);
         locateXY(1,1);
         putCh('>');
@@ -215,7 +264,7 @@ public boolean alarm(){
     if(filename2!=null){
     cls_block(2,2,8,1);
       locateXY(2,2);
-      if(strLen(filename2)<=16){  //文字数*2で返ってくる
+      if(strLen(filename2)<=8){  //文字数*2で返ってくる
         putStr(filename2);
         locateXY(1,1);
         putCh('A');
@@ -230,7 +279,7 @@ public boolean alarm(){
     if(filename3!=null){
     cls_block(2,3,8,1);
       locateXY(2,3);
-      if(strLen(filename3)<=16){  //文字数*2で返ってくる
+      if(strLen(filename3)<=8){  //文字数*2で返ってくる
         putStr(filename3);
       }
       else{
@@ -239,34 +288,30 @@ public boolean alarm(){
         putStr(filename3);
       }
     }
-  free(filename1);
-  free(filename2);
-  free(filename3);
   }
-
-  for(;;){
+  music_path = subCat("./MP3/",fullname);
+  for(;;){      //鳴ってる
     int sw = readSw();
     int num = swToNum(sw);   //押されたボタン
-    if(music==true && num==5){
+    if(playFlag==true && num==5){
+      printF("止まる\n");
+      printF("%s\n",music_path);
       stop();
       music=false;
       alarmflag = false;
       break;
-    } else {
+    } else if(playFlag==false) {
       music=true;
-      mu_path = subCat("./MP3/",filename1);
-      music_path = subCat(mu_path,".mp3");
+      printF("なる");
+      printF("%s\n",music_path);
       play(music_path);
     }
+    sleep(10);
   }
-  free(music_path);
-  free(mu_path);
-  return alarmflag;
+  //free(fullname);
+  //free(filename1);
+  //free(filename2);
+  //free(filename3);
+  //free(music_path);
+  return false;
 }
-
-//alarmが呼ばれて
-//1秒タイマー関数へ
-//ユーザ指定の値をTimerレジスタに
-//指定秒経過したら音源再生
-//STOPで停止
-//横１６．縦８
