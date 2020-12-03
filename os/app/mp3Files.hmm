@@ -40,7 +40,7 @@ public char[] subCat(char[] cat_s, char[] src);
 //public char[] mp3FilesGetPath(int n);     // n 番目パス名を返す
 
 
-#define INDEX_SIZE 128 //indexファイルに記載された曲の最大数
+#define INDEX_SIZE 64 //indexファイルに記載された曲の最大数
 
 // indexファイルの中身の各要素を格納する構造体
 struct index_type{
