@@ -83,6 +83,7 @@ public Dir_i readDir_i(int fd, char[] ext) {
 // 文字列操作
 //-----------------------------------------------------------------------------
 // 文字列結合
+/*
 public char[] strCat(char[] dst, char[] src) {
   int i = 0;
   while (dst[i]!='\0')                              // 文字列の最後を探す
@@ -91,7 +92,7 @@ public char[] strCat(char[] dst, char[] src) {
     ;
   }
   return dst;
-}
+}*/
 
 // 文字列比較
 public int strCmp(char[] s1, char[] s2) {

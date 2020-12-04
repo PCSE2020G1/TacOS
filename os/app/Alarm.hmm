@@ -20,4 +20,4 @@
  */
 
 public boolean alarm();
-public void timer1s(int timer);
+public void down_timer();
