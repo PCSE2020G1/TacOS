@@ -55,7 +55,7 @@
 
 
 char[] str_line = array(32); //1行読み込む一時変数
-char[] file_mp3 = array(MUSIC_NAME_SIZE+5); //拡張子を付けたファイル名を格納する一次変数
+char[] file_mp3 = array(MUSIC_NAME_SIZE); //拡張子を付けたファイル名を格納する一次変数
 char[] tag_str = array(10);
 char[] bin_tmp = array(10);
 char[] b = array(5);
@@ -88,7 +88,7 @@ struct mp3_tag {
 
 public index_type[] index_list = array(INDEX_SIZE); //構造体配列の静的メモリ確保
 
-public char[][] files = array(5, MUSIC_NAME_SIZE+5); //(ファイル数, ファイルの文字数) 1234567890.123
+char[][] files = array(5, MUSIC_NAME_SIZE); //(ファイル数, ファイルの文字数) 1234567890.123
 public int numFile;                                        // ファイルの個数
 
 char[] mp3Dir = "/MP3"; //ディレクトリがどう構成されるか不明
@@ -115,21 +115,12 @@ public void mp3FilesInit() {
   close(fd);
 }
 
-// n 番目ファイル名を返す（1<=n && n<=5）-> 後で変更
-public char[] mp3FilesGetName(int n) {
-  if (1<=n && n<=numFile) {
-    return files[n-1];
-  }
-  return null;
-}
-
 
 void subCpy(char[] target, char[] ori, int index, int n){
     for(int i=0;i<n;i=i+1){
         target[i] = ori[i+index];
     }
     target[n] = '\0';
-    return;
 }
 
 
@@ -212,7 +203,7 @@ public int func_atoi(char[] str, int len){
 
 //_ItoAもよくわからなかったため似た関数を作成 int -> ascii
 public char[] func_itoa(int a){
-  char[] str = malloc(sizeof(char)*5);
+  char[] str = malloc(sizeof(char)*6);
   if(48 <= (a+ord('0')) && (a+ord('0')) <= 57){ //0~9ならば
       str[0] = chr(a+ord('0'));
       str[1] = '\0';
@@ -253,13 +244,13 @@ void TagsInit(){
 
   //構造体リストの動的確保
   for(int i=0; i<INDEX_SIZE; i=i+1){
-      index_list[i] = malloc(sizeof(index_type));
+    index_list[i] = malloc(sizeof(index_type));
   }
   //構造体の中身の配列動的確保
   for(int i=0; i<INDEX_SIZE; i=i+1){
-      index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
-      index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
-      index_list[i].albam_name = malloc(sizeof(char)*ALBAM_NAME_SIZE);
+    index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
+    index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
+    index_list[i].albam_name = malloc(sizeof(char)*ALBAM_NAME_SIZE);
   }
   if((fp=open("index.csv", READ_MODE))>=0){ //インデックスファイルが存在したら
     str_line = malloc(sizeof(char)*32);
@@ -297,9 +288,11 @@ void TagsInit(){
     }
     free(str_line);
   } else{ //インデックスファイルが存在しない(初期起動)
+  /*
     tag = malloc(sizeof(mp3_tag));
     tag_str = malloc(sizeof(char)*10);
     bin_tmp = malloc(sizeof(char)*10);
+    file_mp3 = malloc(sizeof(char)*MUSIC_NAME_SIZE);
     for(int p=0;p<numFile;p=p+1){
       char[] d = "./MP3/"; //パス指定
       file_mp3 = subCat(d, files[p]); //strCatと同じ動き
@@ -462,7 +455,6 @@ void TagsInit(){
             tag.frame_cnt = tag.frame_cnt + 1;
             read(fp, buf, 1);
             if(ord(buf[0])!=251){ //end of file fb以外が来たら終了
-              printF("finish\n");
               break;
             }
             int one_loop = (frame_size-1)%32;
@@ -490,7 +482,11 @@ void TagsInit(){
       }
       close(fp);
     }
-    free(bin_tmp);
-    free(tag);
+    //free(tag_str);
+    //free(file_mp3);
+    //free(bin_tmp);
+    //free(tag);
+    */
+    ;
   }
 }
