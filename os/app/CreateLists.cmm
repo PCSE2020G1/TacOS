@@ -38,37 +38,40 @@
 #include "CreateLists.hmm"
 #include "mp3Files.hmm"
 
-public int[][] list = array(5, 20); //サイズは適当
+//public int[][] list = array(5, 20); //サイズは適当
 //list = {{1, 4, 5, 10}, {2, 3, 6}, {1, 2, 7, 8}};みたいなイメージ
 
-char[] str_line = array(32); //1行読み込む一時変数
-char[] list_file = array(15); //リスト名を格納する一次変数
 char[] buf = array(32);
-boolean index_flag = false;
-int fd;
 
 void IndexCreate();
 
-public void ListCreateInit(){                                     // ファイルディスクリプタ
+public void ListCreateInit(){
+    boolean index_flag = false;
+    int fd;
+
     if ((fd=open("./", READ_MODE))<0) {
         panic("panic_1c:can't open Dir");
     }
-    Dir_i dir; //appUtil.hmmで宣言されている
+    Dir dir; //appUtil.hmmで宣言されている
     //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
     int i = 0;
-    while (i<5 && (dir=readDir_i(fd, "CSV"))!=null) {   // csvファイルを読み込む
+    while (i<5 && (dir=readDir(fd, "CSV"))!=null) {   // csvファイルを読み込む
+        char[] list_file;// = malloc(sizeof(char)*15);
+        printF("%s\n", dir.name);
         list_file = subCat("./", dir.name);
+        printF("list=%s\n", list_file);
         if(strCmp(list_file, "./INDEX.CSV") == 0){
             index_flag = true;
-        } else{
-            str_line = malloc(sizeof(char)*32);
+        } /*else{
             if((fd=open(list_file, READ_MODE))>=0){ //リストファイルを開く
+                char[] str_line = malloc(sizeof(char)*32);
                 //各行を処理する
                 int t, p = 0;
                 //read(fd, buf, 1);
                 for(t=0; read(fd, buf, 1)==1; t=t+1){
                     if(buf[0] == ','){
                         str_line[t] = '\0';
+                        printF("str_line=%s\n", str_line);
                         list[i][p] = func_atoi(str_line, t);
                         t = -1;
                         p = p + 1;
@@ -79,20 +82,25 @@ public void ListCreateInit(){                                     // ファイ�
                 }
                 str_line[t] = '\0';
                 list[i][p] = func_atoi(str_line, t);
+                free(str_line);
             }
-            free(str_line);
-        }   
+        }*/
+        dbgPutStr("debug_1\n");
         i = i + 1;
-        close(fd);
+        //free(list_file);
     }
+    //if((fd=open("INDEX.CSV", READ_MODE))<0){ //インデックスファイルが存在しなかったら
     if(!index_flag){ //インデックスファイルが存在しなかったら
         dbgPutStr("not index\n");
         IndexCreate(); //インデックスファイルを作成
     }
+    close(fd);
+    dbgPutStr("debug_2\n");
 }
 
 
 void IndexCreate(){
+    int fd;
     if(creat("./index.csv") != 0){
         panic("can't create index_file");
     }
@@ -126,7 +134,7 @@ void IndexCreate(){
             //改行
             write(fd, "\n", 1);
             //
-            //printF("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
+            printF("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
         }
         
     }
@@ -134,22 +142,23 @@ void IndexCreate(){
 }
 
 
-//public void FileManage(){
-//    printF("filemanage\n");
-//}
+public void FileManage(){
+    printF("filemanage\n");
+}
 
 
 public void ListCreate(char[] target, int n){
-    if(creat("./list_1.csv") != 0){
-        panic("can't create index_file");
+    int fd;
+    if(creat("./list_3.csv") != 0){
+        panic("can't create list_file");
     }
-    if((fd=open("list_1.csv", WRITE_MODE))>=0){ //ファイルが開けたら
-        //printF("listcreate\n");
-        write(fd, "1,3,4,10,15", 11);
+    if((fd=open("list_3.csv", WRITE_MODE))>=0){ //ファイルが開けたら
+        printF("listcreate\n");
+        write(fd, "3,4,6,12,15", 11);
     }
     close(fd);
 }
 
-//public void ListManage(char[] list_file){
-//    printF("listmanage\n");
-//}
+public void ListManage(char[] list_file){
+    printF("listmanage\n");
+}

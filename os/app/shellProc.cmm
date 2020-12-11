@@ -40,7 +40,7 @@
 #include "font.hmm"
 #include "CreateLists.hmm"
 #include "appUtil.hmm"
-#include "Alarm.hmm"
+//#include "Alarm.hmm"
 
 
 //-----------------------------------------------------------------------------
@@ -146,9 +146,9 @@ void playmodeDisplay(){
 
 }
 
-char[] display_name = array(20);
+
 void playmode_music_Display(int n){
-  display_name = malloc(sizeof(char)*20);
+  char[] display_name = malloc(sizeof(char)*20);
 
   cls_block(0,0,1,8);
   cls_block(0,0,16,6);
@@ -188,12 +188,12 @@ void playmode_music_Display(int n){
 }
 
 
-char[][] artist_array = array(5, INDEX_SIZE);
+//char[][] artist_array = array(5, INDEX_SIZE);
 int artarr_current = 0; //artist_arrayの現在参照位置を格納する変数
 
 // /playmode/artistを選択した際に表示
-void playmode_artist_Display(){
-  display_name = malloc(sizeof(char)*20);
+void playmode_artist_Display(char[][] artist_array){
+  char[] display_name = malloc(sizeof(char)*20);
 
   // それまでの情報を削除
   cls_block(0,0,1,8);
@@ -237,16 +237,20 @@ void putCursor(int y){
 // MP3 プレーヤのメインプロセス
 //-----------------------------------------------------------------------------
 // ここからプロセスの実行が始まる
-char[] tmp = array(20);
 
-char[] play_path = array(30);
 public void shellMain() {
-  tmp = malloc(sizeof(char)*20);
-  play_path = malloc(sizeof(char)*30);
+  char[] tmp = malloc(sizeof(char)*20);
+  char[] play_path = malloc(sizeof(char)*30);
+  char[][] artist_array = malloc(sizeof(char)*10);
+  for(int i=0;i<10;i=i+1){
+    artist_array[i] = malloc(sizeof(char)*10);
+  }
 
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
+  dbgPutStr("s_debug_1\n");
   mp3FilesInit();                                   // ファイル一覧を作る
+  dbgPutStr("s_debug_2\n");
   ListCreateInit();                                 //　インデックスファイルやリストの作成/管理
   
   //画面の状態を記録する変数
@@ -306,6 +310,7 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
+      /*
       else if(cursor_pos==2 && num==3){ //横ボタンが押されたら(alarmが選択されたら)
         //アラームモードに移行
         state = 5;
@@ -315,6 +320,7 @@ public void shellMain() {
           homeDisplay();
         }
       }
+      */
     }
 
     else if(state==1){ // /playmode/のとき
@@ -340,7 +346,7 @@ public void shellMain() {
         }
         // /playmode/artist/に遷移
         state = 2;
-        playmode_artist_Display();
+        playmode_artist_Display(artist_array);
         cursor_pos = 1;
         putCursor(cursor_pos);
       }
@@ -540,6 +546,10 @@ public void shellMain() {
     sleep(10);
     last_num = num;
   }
+  for(int i=0;i<10;i=i+1){
+    free(artist_array[i]);
+  }
+  free(artist_array);
   free(tmp);
   free(play_path);
 }

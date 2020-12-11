@@ -41,10 +41,7 @@
   *2020.11.01 : cls_block()の関数を追記
  */
 
-#include <stdio.hmm>
-#include <stdlib.hmm>
-#include <appUtil.hmm> //stringから変更
-#include <ctype.hmm>
+#include "appUtil.hmm" //stringから変更
 #include "spi.hmm"
 #include "font.hmm"
 #include "lcd.hmm"

@@ -23,13 +23,6 @@
  * mp3Files.hmm : MP3ファイルの一覧
  *
  * 2020.09.16 : 新規作成
- * 2020.11.20 : filesをpublic化
- * 2020.11.25 : numFileをpublic化
- * 2020.11.27 : subCatをpublic化
- * 2020.12.01 : func_atoiをpublic化
- *              インデックスファイル構造体をmp3Files.cmmに移動
- *              index_typeにalbam_name(アルバム名)を追加
- * 2020.12.03 : func_itoaをpublic化
  *
  * $Id$
  *

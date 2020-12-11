@@ -28,16 +28,16 @@
  *
  */
 
-#include "mp3Proc.hmm"
-#include "mp3Files.hmm"
-#include "../util/crt0.hmm"
-#include "../kernel/kernel.hmm"
-#include "../fs/fs.hmm"
+#include <util.hmm>
+#include <kernel.hmm>
+#include <fs.hmm>
+#include <mm.hmm>
 #include "spi.hmm"
 #include "lcd.hmm"
 #include "shellProc.hmm"
-#include <mm.hmm>
-#include <util.hmm>
+#include "mp3Proc.hmm"
+#include "mp3Files.hmm"
+
 
 // レスポンス
 #define OK  0
@@ -218,11 +218,11 @@ public boolean alarm(){
 
 //曲名リストをlcdへ
   int i=0;
-  filename1 = malloc(sizeof(char)*N);
-  filename2 = malloc(sizeof(char)*N);
-  filename3 = malloc(sizeof(char)*N);
-  fullname = malloc(sizeof(char)*N);
-  music_path = malloc(sizeof(char)*M);
+  //char[] filename1 = malloc(sizeof(char)*N);
+  //char[] filename2 = malloc(sizeof(char)*N);
+  //char[] filename3 = malloc(sizeof(char)*N);
+  //char[] fullname = malloc(sizeof(char)*N);
+  //char[] music_path = malloc(sizeof(char)*M);
   FilesSort(1);       //mode1
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
