@@ -40,7 +40,7 @@
 #include "font.hmm"
 #include "CreateLists.hmm"
 #include "appUtil.hmm"
-//#include "Alarm.hmm"
+#include "Alarm.hmm"
 
 
 //-----------------------------------------------------------------------------
@@ -194,7 +194,7 @@ int artarr_current = 0; //artist_arrayの現在参照位置を格納する変数
 
 // /playmode/artistを選択した際に表示
 void playmode_artist_Display(char[][] artist_array){
-  char[] display_name = malloc(sizeof(char)*20);
+  //char[] display_name = malloc(sizeof(char)*20);
 
   // それまでの情報を削除
   cls_block(0,0,1,8);
@@ -224,7 +224,7 @@ void playmode_artist_Display(char[][] artist_array){
     }
   }
 
-  free(display_name);
+  //free(display_name);
 }
 
 
@@ -311,7 +311,7 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
-      /*
+
       else if(cursor_pos==2 && num==3){ //横ボタンが押されたら(alarmが選択されたら)
         //アラームモードに移行
         state = 5;
@@ -321,7 +321,7 @@ public void shellMain() {
           homeDisplay();
         }
       }
-      */
+
     }
 
     else if(state==1){ // /playmode/のとき
@@ -335,7 +335,7 @@ public void shellMain() {
       }
       else if(cursor_pos==1 && num==3){ //右ボタンが押されたら(/playmode/artistが選択されたら)
 
-        FilesSort(3); //アーティスト名の降順でソートする
+        //FilesSort(3); //アーティスト名の降順でソートする
 
         artarr_current = 0;
         for(int m=0; m<numFile; m=m+1){

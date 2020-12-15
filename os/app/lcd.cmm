@@ -194,7 +194,8 @@ public void FilesSort(int mode){
         }
       }
     }
-  } else if(mode==3){
+  }
+  else if(mode==3){
     //降順アーティスト名ソート
     for(int i=0; i<INDEX_SIZE-1; i=i+1){
       for(int j=INDEX_SIZE-1; j>i; j=j-1){
@@ -205,7 +206,8 @@ public void FilesSort(int mode){
         }
       }
     }
-  } else if(mode==4){
+  }
+  else if(mode==4){
     //昇順再生回数ソート
     for(int i=0; i<INDEX_SIZE-1; i=i+1){
       for(int j=INDEX_SIZE-1; j>i; j=j-1){
