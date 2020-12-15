@@ -87,6 +87,7 @@ public int swToNum(int sw) {
 }
 
 
+/*
 //引数の文字列が印刷可能な文字であればtrue, そうでなければfalseを返す
 boolean isName(char[] str){
   boolean flag = true;
@@ -99,7 +100,7 @@ boolean isName(char[] str){
   }
   return flag;
 }
-
+*/
 
 //-----------------------------------------------------------------------------
 // 画面表示
@@ -168,7 +169,7 @@ void playmode_music_Display(int n){
     strCpy(display_name,index_list[n+i].music_name);
     //dbgPutStr(display_name);
     //dbgPutStr("\n");
-    if(display_name[0]!='\0' && isName(display_name)){ //nullでなく、表示可能な文字列であれば
+    if(display_name[0]!='\0'){ //nullでなく、表示可能な文字列であれば
       if(strLen(display_name)>=8){ //8文字以上なら
         //8文字目に'...'を表示する
         display_name[8] = '\0';
@@ -412,7 +413,7 @@ public void shellMain() {
           putCh(' ');
           cursor_pos = 4;
           putCursor(cursor_pos);
-          if(index_list[index_current-3].music_name!=null && isName(index_list[index_current-3].music_name)){
+          if(index_list[index_current-3].music_name!=null){
             index_current = index_current - 3;
             playmode_music_Display(index_current);
           }
@@ -511,7 +512,7 @@ public void shellMain() {
         putCh(' ');
         cursor_pos = 1;
         putCursor(cursor_pos);
-        if((index_list[index_current+3].music_name!=null) && isName(index_list[index_current+3].music_name)){
+        if(index_list[index_current+3].music_name!=null){
           index_current = index_current + 3;
           playmode_music_Display(index_current);
         }
