@@ -49,3 +49,4 @@ struct index_type{
 };
 
 public index_type[] index_list; //indexファイルのそれぞれの要素を格納する変数配列
+//public void[] index_list; //indexファイルのそれぞれの要素を格納する変数配列
