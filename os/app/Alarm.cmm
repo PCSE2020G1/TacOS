@@ -46,10 +46,12 @@
 #define M 30
 
 int alarmtime;                              //カウントダウンする時間を持つ
+/*
 char[] fullname = array(N);
 char[] filename1 = array(N);
 char[] filename2 = array(N);
 char[] filename3 = array(N);
+*/
 char[] music_path = array(M);
 int minute = 0;
 int second = 0;
@@ -218,11 +220,11 @@ public boolean alarm(){
 
 //曲名リストをlcdへ
   int i=0;
-  //char[] filename1 = malloc(sizeof(char)*N);
-  //char[] filename2 = malloc(sizeof(char)*N);
-  //char[] filename3 = malloc(sizeof(char)*N);
-  //char[] fullname = malloc(sizeof(char)*N);
-  //char[] music_path = malloc(sizeof(char)*M);
+  char[] filename1 = malloc(sizeof(char)*N);
+  char[] filename2 = malloc(sizeof(char)*N);
+  char[] filename3 = malloc(sizeof(char)*N);
+  char[] fullname = malloc(sizeof(char)*N);
+  char[] music_path = malloc(sizeof(char)*M);
   FilesSort(1);       //mode1
   for(;;){    //alarmflag=trueの時永遠に回る
     int sw = readSw();
@@ -304,10 +306,10 @@ public boolean alarm(){
     }
     sleep(10);
   }
-  //free(fullname);
-  //free(filename1);
-  //free(filename2);
-  //free(filename3);
+  free(fullname);
+  free(filename1);
+  free(filename2);
+  free(filename3);
   //free(music_path);
   return false;
 }
