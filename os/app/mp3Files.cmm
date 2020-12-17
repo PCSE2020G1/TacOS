@@ -53,7 +53,7 @@ int[][] bit_rate_table_1 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 0}}; //int型は16bit(signed)なので、下二桁を落とす
 
 public int numFile;                                        // ファイルの個数
-public index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する変数配列
+//public index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する変数配列
 
 void TagsInit();
 
