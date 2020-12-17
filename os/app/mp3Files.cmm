@@ -50,13 +50,10 @@ int[][] bit_rate_table_1 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
                             {0, 0, 0}, {288, 160, 128}, {320, 192, 160}, {0, 0, 0},
                             {0, 0, 0}, {0, 0, 0}, {448, 384, 320}, {0, 0, 0}};
-int[][] bit_rate_table_2 = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
-                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
-                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
-                            {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 int[][] sample_rate = {{441, 220, 110}, {480, 240, 120}, {320, 160, 80}, {0, 0, 0}}; //int型は16bit(signed)なので、下二桁を落とす
 
 public int numFile;                                        // ファイルの個数
+//public index_type[] index_list = array(INDEX_SIZE); //indexファイルのそれぞれの要素を格納する変数配列
 
 void TagsInit();
 
@@ -67,18 +64,24 @@ public void mp3FilesInit() {
     panic("panic1:can't open MP3 Dir");
   }
 
-
+  
   //構造体リストの動的確保
   for(int i=0; i<INDEX_SIZE; i=i+1){
     index_list[i] = malloc(sizeof(index_type));
   }
-
+  
   //構造体の中身の動的確保
   for(int i=0; i<INDEX_SIZE; i=i+1){
     index_list[i].music_name = malloc(sizeof(char)*MUSIC_NAME_SIZE);
     index_list[i].art_name = malloc(sizeof(char)*ART_NAME_SIZE);
     index_list[i].albam_name = malloc(sizeof(char)*ALBAM_NAME_SIZE);
   }
+  
+  /*
+  index_list = malloc(sizeof(void[])*INDEX_SIZE);
+  for(int i=0; i<INDEX_SIZE; i=i+1){
+    index_list[i] = malloc(sizeof(index_type));
+  }*/
 
   Dir dir; //appUtil.hmmで宣言されている
   //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
@@ -324,7 +327,7 @@ void TagsInit(){
           free(tag_str);
           free(tag_tmp);
         }
-        if(ord(buf[0])==255 && loop_cnt > 1000){
+        if(ord(buf[0])==255 && loop_cnt > 500){
           char version_id = '0'; //1:version1.0, 2:version2.0, 3:version2.5
           char layer_id = '0'; //3:layer3, 2:layer2, 1:layer1
           int bit_rate = 0;
@@ -338,7 +341,6 @@ void TagsInit(){
           char[] b = malloc(sizeof(char)*5);
 
           read(fp, buf, 1);
-          printF("next=%d\n", ord(buf[0]));
           //decimal -> binary
           dtob(bin_bit, ord(buf[0]));
           //
@@ -382,9 +384,9 @@ void TagsInit(){
           }
           if(version_id == '1'){
               bit_rate = bit_rate_table_1[bin_num][ord(layer_id)-ord('0')-1];
-          } else if(version_id == '2' || version_id == '3'){
-              bit_rate = bit_rate_table_2[bin_num][ord(layer_id)-ord('0')-1];
-          }
+          } //else if(version_id == '2' || version_id == '3'){
+            //  bit_rate = bit_rate_table_2[bin_num][ord(layer_id)-ord('0')-1];
+          //}
           //
           //F:sampling rate
           subCpy(b, bin_bit, 4, 2);
@@ -434,8 +436,8 @@ void TagsInit(){
             frame_cnt = frame_cnt + 1;
             read(fp, buf, 1);
             if(ord(buf[0]) < 224){ //end of file E0を下回ったら(構成的にあり得ない)
-              printF("bit=%s %c\n", bin_bit, bin_bit[6]);
-              printF("%d\n", ord(buf[0]));
+              //printF("bit=%s %c\n", bin_bit, bin_bit[6]);
+              //printF("%d\n", ord(buf[0]));
               break;
             }
             int one_loop = (frame_size-1)%32;
@@ -460,12 +462,10 @@ void TagsInit(){
           //
           free(bin_bit);
           free(b);
-          printF("%d / %d / %d / %d / %d\n", bit_rate, sampling_h, frame_size, frame_cnt, sum/100);
           break;
         }
         loop_cnt = loop_cnt + 1;
       }
-      printF("%s / %d / %s / %s / %d\n", index_list[p].music_name, index_list[p].id, index_list[p].art_name, index_list[p].albam_name, index_list[p].play_cnt);
       close(fp);
     }
   }

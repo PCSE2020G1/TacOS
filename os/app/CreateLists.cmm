@@ -57,9 +57,9 @@ public void ListCreateInit(){
     int i = 0;
     while (i<5 && (dir=readDir(fd, "CSV"))!=null) {   // csvファイルを読み込む
         char[] list_file;// = malloc(sizeof(char)*15);
-        printF("%s\n", dir.name);
+        //printF("%s\n", dir.name);
         list_file = subCat("./", dir.name);
-        printF("list=%s\n", list_file);
+        //printF("list=%s\n", list_file);
         if(strCmp(list_file, "./INDEX.CSV") == 0){
             index_flag = true;
         } /*else{
@@ -71,7 +71,7 @@ public void ListCreateInit(){
                 for(t=0; read(fd, buf, 1)==1; t=t+1){
                     if(buf[0] == ','){
                         str_line[t] = '\0';
-                        printF("str_line=%s\n", str_line);
+                        //printF("str_line=%s\n", str_line);
                         list[i][p] = func_atoi(str_line, t);
                         t = -1;
                         p = p + 1;
@@ -85,22 +85,20 @@ public void ListCreateInit(){
                 free(str_line);
             }
         }*/
-        dbgPutStr("debug_1\n");
         i = i + 1;
         //free(list_file);
     }
     //if((fd=open("INDEX.CSV", READ_MODE))<0){ //インデックスファイルが存在しなかったら
     if(!index_flag){ //インデックスファイルが存在しなかったら
-        dbgPutStr("not index\n");
         IndexCreate(); //インデックスファイルを作成
     }
     close(fd);
-    dbgPutStr("debug_2\n");
 }
 
 
 void IndexCreate(){
     int fd;
+    dbgPutStr("create index file");
     if(creat("./index.csv") != 0){
         panic("can't create index_file");
     }
@@ -143,7 +141,8 @@ void IndexCreate(){
 
 
 public void FileManage(){
-    printF("filemanage\n");
+    //printF("filemanage\n");
+    ;
 }
 
 
@@ -153,12 +152,13 @@ public void ListCreate(char[] target, int n){
         panic("can't create list_file");
     }
     if((fd=open("list_3.csv", WRITE_MODE))>=0){ //ファイルが開けたら
-        printF("listcreate\n");
+        //printF("listcreate\n");
         write(fd, "3,4,6,12,15", 11);
     }
     close(fd);
 }
 
 public void ListManage(char[] list_file){
-    printF("listmanage\n");
+    //printF("listmanage\n");
+    ;
 }
