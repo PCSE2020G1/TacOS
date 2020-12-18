@@ -41,10 +41,7 @@
   *2020.11.01 : cls_block()の関数を追記
  */
 
-#include <stdio.hmm>
-#include <stdlib.hmm>
-#include <appUtil.hmm> //stringから変更
-#include <ctype.hmm>
+#include "appUtil.hmm" //stringから変更
 #include "spi.hmm"
 #include "font.hmm"
 #include "lcd.hmm"
@@ -173,7 +170,9 @@ public void FilesSort(int mode){
         }
       }
     }
-  } else if(mode==1){
+  }
+  /*
+  else if(mode==1){
     //降順曲名ソート
     for(int i=0; i<INDEX_SIZE-1; i=i+1){
       for(int j=INDEX_SIZE-1; j>i; j=j-1){
@@ -195,7 +194,8 @@ public void FilesSort(int mode){
         }
       }
     }
-  } else if(mode==3){
+  }
+  else if(mode==3){
     //降順アーティスト名ソート
     for(int i=0; i<INDEX_SIZE-1; i=i+1){
       for(int j=INDEX_SIZE-1; j>i; j=j-1){
@@ -206,7 +206,8 @@ public void FilesSort(int mode){
         }
       }
     }
-  } else if(mode==4){
+  }
+  else if(mode==4){
     //昇順再生回数ソート
     for(int i=0; i<INDEX_SIZE-1; i=i+1){
       for(int j=INDEX_SIZE-1; j>i; j=j-1){
@@ -232,4 +233,5 @@ public void FilesSort(int mode){
     //modeの値が間違えているエラー
     return; //コマンド待ちに戻る
   }
+  */
 }

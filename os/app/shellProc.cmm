@@ -40,6 +40,7 @@
 #include "font.hmm"
 #include "CreateLists.hmm"
 #include "appUtil.hmm"
+#include "Alarm.hmm"
 
 
 //-----------------------------------------------------------------------------
@@ -57,11 +58,6 @@
 int sw0 = 0x00;                                     // 前回の状態(デバウンス前)
 int sw1 = 0x00;                                     // 前回の状態(デバウンス後)
 
-// /playmode/artist/を選択した際、アーティストを抽出して、そのアーティスト名が何曲あるかを同時に格納する,構造体配列の型
-struct artist_array_type{
-    char[] art_name;
-    int quantity;
-};
 
 public int readSw() {
   int sw = ~in(0x18) & SWS;                         // スイッチを読み正論理に変換
@@ -91,6 +87,7 @@ public int swToNum(int sw) {
 }
 
 
+/*
 //引数の文字列が印刷可能な文字であればtrue, そうでなければfalseを返す
 boolean isName(char[] str){
   boolean flag = true;
@@ -103,7 +100,7 @@ boolean isName(char[] str){
   }
   return flag;
 }
-
+*/
 
 //-----------------------------------------------------------------------------
 // 画面表示
@@ -150,9 +147,9 @@ void playmodeDisplay(){
 
 }
 
-char[] display_name = array(20);
+
 void playmode_music_Display(int n){
-  display_name = malloc(sizeof(char)*20);
+  char[] display_name = malloc(sizeof(char)*20);
 
   cls_block(0,0,1,8);
   cls_block(0,0,16,6);
@@ -170,9 +167,9 @@ void playmode_music_Display(int n){
   for(int i=0; i<3; i=i+1){
     //3曲分を取り出して画面に曲名を出す
     strCpy(display_name,index_list[n+i].music_name);
-    dbgPutStr(display_name);
-    dbgPutStr("\n");
-    if(display_name[0]!='\0' && isName(display_name)){ //nullでなく、表示可能な文字列であれば
+    //dbgPutStr(display_name);
+    //dbgPutStr("\n");
+    if(display_name[0]!='\0'){ //nullでなく、表示可能な文字列であれば
       if(strLen(display_name)>=8){ //8文字以上なら
         //8文字目に'...'を表示する
         display_name[8] = '\0';
@@ -192,13 +189,12 @@ void playmode_music_Display(int n){
 }
 
 
-artist_array_type[] artist_array = array(INDEX_SIZE);
-int qua_cnt = 0; //artarr_currentが参照するアーティスト名の個数をカウントする変数
+//char[][] artist_array = array(5, INDEX_SIZE);
 int artarr_current = 0; //artist_arrayの現在参照位置を格納する変数
 
 // /playmode/artistを選択した際に表示
-void playmode_artist_Display(){
-  display_name = malloc(sizeof(char)*20);
+void playmode_artist_Display(char[][] artist_array){
+  //char[] display_name = malloc(sizeof(char)*20);
 
   // それまでの情報を削除
   cls_block(0,0,1,8);
@@ -215,18 +211,20 @@ void playmode_artist_Display(){
   putLineW(11,0,4,false);
   putLineW(11,7,4,false);
 
-  for(int i=0; i<3; i=i+1){
-    if(qua_cnt==artist_array[artarr_current].quantity){
-      //個数が一致したら、次のアーティスト名を参照し始める
-    }
-    else if(qua_cnt==0){
-      //0個目を表示する際は、その前にアーティスト名を表示する
-      locateXY(1,1);
-      putStr(artist_array[artarr_current].art_name);
+  int art_num = 0;
+
+  locateXY(2, art_num+1);
+  putStr(artist_array[0]);
+  art_num = art_num + 1;
+  for(int t=0;t<numFile;t=t+1){
+    if(strCmp(index_list[t].art_name, artist_array[0]) == 0){
+      locateXY(2, art_num+1);
+      putStr(index_list[t].music_name);
+      art_num = art_num + 1;
     }
   }
 
-  free(display_name);
+  //free(display_name);
 }
 
 
@@ -240,12 +238,14 @@ void putCursor(int y){
 // MP3 プレーヤのメインプロセス
 //-----------------------------------------------------------------------------
 // ここからプロセスの実行が始まる
-char[] tmp = array(20);
 
-char[] play_path = array(30);
 public void shellMain() {
-  tmp = malloc(sizeof(char)*20);
-  play_path = malloc(sizeof(char)*30);
+  char[] tmp = malloc(sizeof(char)*20);
+  char[] play_path = malloc(sizeof(char)*30);
+  char[][] artist_array = malloc(sizeof(char)*10);
+  for(int i=0;i<10;i=i+1){
+    artist_array[i] = malloc(sizeof(char)*10);
+  }
 
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
@@ -309,11 +309,17 @@ public void shellMain() {
         putCh(' ');
         putCursor(cursor_pos);
       }
+
       else if(cursor_pos==2 && num==3){ //横ボタンが押されたら(alarmが選択されたら)
         //アラームモードに移行
         state = 5;
-        // alarm();   //ここでアラーム関数を呼ぶ(未実装)
+        boolean alarmflag = alarm();   //ここでアラーム関数を呼ぶ(未実装)
+        if(alarmflag==false){
+          state = 0;
+          homeDisplay();
+        }
       }
+
     }
 
     else if(state==1){ // /playmode/のとき
@@ -326,49 +332,20 @@ public void shellMain() {
         putCursor(cursor_pos);
       }
       else if(cursor_pos==1 && num==3){ //右ボタンが押されたら(/playmode/artistが選択されたら)
-        //構造体配列領域の確保
-        for(int m=0; m<INDEX_SIZE; m=m+1){
-          artist_array[m] = malloc(sizeof(artist_array_type)*INDEX_SIZE);
-        }
-        for(int m=0; m<INDEX_SIZE; m=m+1){
-          artist_array[m].art_name = malloc(sizeof(char)*20);
-        }
-        FilesSort(3); //アーティスト名の降順でソートする
-        dbgPutStr("end sort");
-        dbgPutStr("\n");
 
-        //アーティスト名をアーティスト配列に抽出
-        //if((index_list[0].art_name!=null) && (isName(index_list[0].art_name))){
-        if(index_list[0].art_name!=null){
-          printF(index_list[0].art_name);
-          printF("\n");
-          strCpy(artist_array[0].art_name, index_list[0].art_name); //////??????????????
-        }
-        else{
-          dbgPutStr("no artist name. please set tag.");
-          dbgPutStr("\n");
-        }
-        printF(artist_array[0].art_name);
-        printF("\n");
-        artist_array[0].quantity = 1;
-        int art_arr_id = 1;
-        for(int m=1; m<INDEX_SIZE; m=m+1){
-          if(strCmp(index_list[m].art_name, artist_array[art_arr_id].art_name) == 0){
-            //もし前にartist_arrayに入ってたやつと一致していたら、quantityを一つカウントアップする
-            artist_array[art_arr_id].quantity = artist_array[art_arr_id].quantity + 1;
-          }
-          else{
+        //FilesSort(3); //アーティスト名の降順でソートする
+
+        artarr_current = 0;
+        for(int m=0; m<numFile; m=m+1){
+          if(strCmp(index_list[m].art_name, artist_array[artarr_current]) != 0){
             //artist_arrayに入っていないアーティスト名が検出されたら、それを新しく登録する
-            art_arr_id = art_arr_id + 1;
-            strCpy(artist_array[art_arr_id].art_name, index_list[m].art_name);
-            artist_array[art_arr_id].quantity = 1;
+            strCpy(artist_array[artarr_current], index_list[m].art_name);
+            artarr_current = artarr_current + 1;
           }
         }
-
-        qua_cnt = 0;
         // /playmode/artist/に遷移
         state = 2;
-        playmode_artist_Display();
+        playmode_artist_Display(artist_array);
         cursor_pos = 1;
         putCursor(cursor_pos);
       }
@@ -400,10 +377,10 @@ public void shellMain() {
         FilesSort(1); //index_listを降順にする
         strCpy(tmp,index_list[0].music_name);
         if(tmp!=null) playmode_music_Display(index_current);
-        else{
-          dbgPutStr("no music here.");
-          dbgPutStr("\n");
-        }
+        //else{
+        //  dbgPutStr("no music here.");
+        //  dbgPutStr("\n");
+        //}
 
         putCursor(cursor_pos);
       }
@@ -420,13 +397,6 @@ public void shellMain() {
 
   else if(state==2){ // /playmode/artist/
     if(num==2){
-      //戻るボタンが押されたら
-      for(int m=0; m<INDEX_SIZE; m=m+1){
-        free(artist_array[m].art_name);
-      }
-      for(int m=0; m<INDEX_SIZE; m=m+1){
-        free(artist_array[m]);
-      }
       state = 1;
       playmodeDisplay();
     }
@@ -441,7 +411,7 @@ public void shellMain() {
           putCh(' ');
           cursor_pos = 4;
           putCursor(cursor_pos);
-          if(index_list[index_current-3].music_name!=null && isName(index_list[index_current-3].music_name)){
+          if(index_list[index_current-3].music_name!=null){
             index_current = index_current - 3;
             playmode_music_Display(index_current);
           }
@@ -459,16 +429,12 @@ public void shellMain() {
         //再生、停止
         if(!playFlag){
           //停止中の場合,再生
-          printF("play music\n");
           strCpy(play_path, "");
           play_path = subCat("./MP3/", index_list[index_current].music_name); //パスの生成
           //subCat(path, ".mp3"); //パスの生成
-          printF(play_path);
-          printF("\n");
           play(play_path);
         } else{
           //再生中の場合、停止
-          printF("music stop\n");
           stop();
         }
       }
@@ -492,16 +458,12 @@ public void shellMain() {
         //再生、停止
         if(!playFlag){
           //停止中の場合,再生
-          printF("play music\n");
           strCpy(play_path, "");
           play_path = subCat("./MP3/", index_list[index_current+1].music_name); //パスの生成
           //subCat(path, ".mp3"); //パスの生成
-          printF(play_path);
-          printF("\n");
           play(play_path);
         } else{
           //再生中の場合、停止
-          printF("music stop\n");
           stop();
         }
       }
@@ -525,16 +487,12 @@ public void shellMain() {
         //再生、停止
         if(!playFlag){
           //停止中の場合,再生
-          printF("play music\n");
           strCpy(play_path, "");
           play_path = subCat("./MP3/", index_list[index_current+2].music_name); //パスの生成
           //subCat(path, ".mp3"); //パスの生成
-          printF(play_path);
-          printF("\n");
           play(play_path);
         } else{
           //再生中の場合、停止
-          printF("music stop\n");
           stop();
         }
       }
@@ -552,8 +510,7 @@ public void shellMain() {
         putCh(' ');
         cursor_pos = 1;
         putCursor(cursor_pos);
-        if((index_list[index_current+3].music_name!=null) && isName(index_list[index_current+3].music_name)){
-          printF("next page\n");
+        if(index_list[index_current+3].music_name!=null){
           index_current = index_current + 3;
           playmode_music_Display(index_current);
         }
@@ -588,6 +545,10 @@ public void shellMain() {
     sleep(10);
     last_num = num;
   }
+  for(int i=0;i<10;i=i+1){
+    free(artist_array[i]);
+  }
+  free(artist_array);
   free(tmp);
   free(play_path);
 }

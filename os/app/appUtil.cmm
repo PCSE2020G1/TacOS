@@ -38,7 +38,7 @@
 char[] buf = array(32);
 
 // ディレクトリの読出しバッファ
-Dir_i dir = {"             ", 0, 0, 0, 0 };
+Dir dir = {"             ", 0, 0, 0, 0 };
 
 // ファイル名のコピー
 int cpName(int i, int j, int n) {
@@ -54,7 +54,7 @@ int cpName(int i, int j, int n) {
 // ディレクトリから１エントリー読み出す（EOF では null を返す）
 //   fd  : オープン済みのディレクトリファイル
 //   ext : 拡張子（nullの場合は拡張子は関係ない）
-public Dir_i readDir_i(int fd, char[] ext) {
+public Dir readDir(int fd, char[] ext) {
   while (read(fd, buf, 32)==32) {              // EOF まで
     char flag = buf[0];                        //   エントリの先頭１バイト
     int  attr = ord(buf[11]);                  //   属性
@@ -83,6 +83,7 @@ public Dir_i readDir_i(int fd, char[] ext) {
 // 文字列操作
 //-----------------------------------------------------------------------------
 // 文字列結合
+
 public char[] strCat(char[] dst, char[] src) {
   int i = 0;
   while (dst[i]!='\0')                              // 文字列の最後を探す
