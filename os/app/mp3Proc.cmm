@@ -45,6 +45,8 @@
 // ＊＊＊＊　重要！！　クライアントプロセスは一つだけの前提　＊＊＊＊
 int link;                                   // メッセージ通信用のリンク
 boolean syncFlag = false;                   // クライアントが同期待ちである
+public boolean playFlag = false;                   //再生状態であるか**
+int playtime;                               //再生時間を持つ**
 
 //-----------------------------------------------------------------------------
 // クライアントプロセスが呼び出す
@@ -54,6 +56,7 @@ boolean syncFlag = false;                   // クライアントが同期待ち
 public void stop() {
   syncFlag = true;                          // データ転送プロセスをコマンド待にする
   sndrec(link, STOP, 0, 0, 0);              // 同期要求メッセージ
+  playFlag = false;                         // 再生状態=false**
 }
 
 // 音楽再生
@@ -61,6 +64,7 @@ public boolean play(char[] path) {
   syncFlag = true;                          // データ転送プロセスをコマンド待にする
   int r = sndrec(link, START,
                   _AtoI(path), 0, 0);       // 再生開始メッセージ
+  playFlag = true;                          // 再生状態=true**
   return r==OK;                             // 成功なら true を返す
 }
 

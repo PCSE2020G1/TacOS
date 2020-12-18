@@ -28,6 +28,25 @@
  *
  */
 
+public int numFile;
+
 public void mp3FilesInit();               // 初期化（ファイル一覧を作る）
-public char[] mp3FilesGetName(int n);     // n 番目ファイル名を返す
-public char[] mp3FilesGetPath(int n);     // n 番目パス名を返す
+public char[] subCat(char[] cat_s, char[] src);
+public int func_atoi(char[] str, int len);
+public char[] func_itoa(int a);
+
+
+#define INDEX_SIZE 16 //indexファイルに記載された曲の最大数
+
+// indexファイルの中身の各要素を格納する構造体
+struct index_type{
+    char[] music_name;
+    int id;
+    int play_cnt;
+    char[] art_name;
+    char[] albam_name;
+    int song_len;
+};
+
+public index_type[] index_list; //indexファイルのそれぞれの要素を格納する変数配列
+//public void[] index_list; //indexファイルのそれぞれの要素を格納する変数配列

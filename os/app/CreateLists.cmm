@@ -1,0 +1,164 @@
+/*
+ * TacOS Source Code
+ *    Tokuyama kousen Advanced educational Computer.
+ *
+ * Copyright (C) 2020 by
+ *                      Dept. of Computer Science and Electronic Engineering,
+ *                      Tokuyama College of Technology, JAPAN
+ *
+ *   上記著作権者は，Free Software Foundation によって公開されている GNU 一般公
+ * 衆利用許諾契約書バージョン２に記述されている条件を満たす場合に限り，本ソース
+ * コード(本ソースコードを改変したものを含む．以下同様)を使用・複製・改変・再配
+ * 布することを無償で許諾する．
+ *
+ *   本ソースコードは＊全くの無保証＊で提供されるものである。上記著作権者および
+ * 関連機関・個人は本ソースコードに関して，その適用可能性も含めて，いかなる保証
+ * も行わない．また，本ソースコードの利用により直接的または間接的に生じたいかな
+ * る損害に関しても，その責任を負わない．
+ *
+ *
+ */
+
+/*
+ * CreateLists.cmm : ファイル管理/作成
+ *
+ * 2020.11.20 : 新規作成
+ * 2020.11.30 : ListCreateInit(), IndexCreate()追加
+ * 2020.12.02 : IndexCreate()完成
+ * 2020.12.03 : ListCreate()作成
+ *
+ * $Id$
+ *
+ */
+
+#include <fs.hmm>
+#include <util.hmm>
+#include <mm.hmm>
+#include "appUtil.hmm"
+#include "CreateLists.hmm"
+#include "mp3Files.hmm"
+
+//public int[][] list = array(5, 20); //サイズは適当
+//list = {{1, 4, 5, 10}, {2, 3, 6}, {1, 2, 7, 8}};みたいなイメージ
+
+char[] buf = array(32);
+
+void IndexCreate();
+
+public void ListCreateInit(){
+    boolean index_flag = false;
+    int fd;
+
+    if ((fd=open("./", READ_MODE))<0) {
+        panic("panic_1c:can't open Dir");
+    }
+    Dir dir; //appUtil.hmmで宣言されている
+    //Dir構造体のnameメンバーは，大きさ12の文字配列で初期化されている必要があります(cmm.pdf 4.1.17 readDir)
+    int i = 0;
+    while (i<5 && (dir=readDir(fd, "CSV"))!=null) {   // csvファイルを読み込む
+        char[] list_file;// = malloc(sizeof(char)*15);
+        //printF("%s\n", dir.name);
+        list_file = subCat("./", dir.name);
+        //printF("list=%s\n", list_file);
+        if(strCmp(list_file, "./INDEX.CSV") == 0){
+            index_flag = true;
+        } /*else{
+            if((fd=open(list_file, READ_MODE))>=0){ //リストファイルを開く
+                char[] str_line = malloc(sizeof(char)*32);
+                //各行を処理する
+                int t, p = 0;
+                //read(fd, buf, 1);
+                for(t=0; read(fd, buf, 1)==1; t=t+1){
+                    if(buf[0] == ','){
+                        str_line[t] = '\0';
+                        //printF("str_line=%s\n", str_line);
+                        list[i][p] = func_atoi(str_line, t);
+                        t = -1;
+                        p = p + 1;
+                    } else{
+                        str_line[t] = buf[0];
+                    }
+                    //read(fd, buf, 1);
+                }
+                str_line[t] = '\0';
+                list[i][p] = func_atoi(str_line, t);
+                free(str_line);
+            }
+        }*/
+        i = i + 1;
+        //free(list_file);
+    }
+    //if((fd=open("INDEX.CSV", READ_MODE))<0){ //インデックスファイルが存在しなかったら
+    if(!index_flag){ //インデックスファイルが存在しなかったら
+        IndexCreate(); //インデックスファイルを作成
+    }
+    close(fd);
+}
+
+
+void IndexCreate(){
+    int fd;
+    dbgPutStr("create index file");
+    if(creat("./index.csv") != 0){
+        panic("can't create index_file");
+    }
+    if((fd=open("index.csv", WRITE_MODE))>=0){ //ファイルが開けたら
+        write(fd, ",id,play_cnt,art_name,song_len\n", 31); //最初の一行
+        for(int i=0; i<numFile; i=i+1){
+            //曲名
+            strCpy(buf, index_list[i].music_name);
+            write(fd, buf, strLen(index_list[i].music_name)); //バイト数はまだ適当
+            //
+            write(fd, ",", 1);
+            //id
+            strCpy(buf, func_itoa(index_list[i].id));
+            write(fd, buf, strLen(func_itoa(index_list[i].id)));
+            //
+            write(fd, ",", 1);
+            //play_cnt
+            strCpy(buf, func_itoa(index_list[i].play_cnt));
+            write(fd, buf, strLen(func_itoa(index_list[i].play_cnt)));
+            //
+            write(fd, ",", 1);
+            //art_name
+            strCpy(buf, index_list[i].art_name);
+            write(fd, buf, strLen(index_list[i].art_name));
+            //
+            write(fd, ",", 1);
+            //song_len
+            strCpy(buf, func_itoa(index_list[i].song_len));
+            write(fd, buf, strLen(func_itoa(index_list[i].song_len)));
+            //
+            //改行
+            write(fd, "\n", 1);
+            //
+            printF("%s / %d / %d / %s / %d\n", index_list[i].music_name, index_list[i].id, index_list[i].play_cnt, index_list[i].art_name, index_list[i].song_len);
+        }
+        
+    }
+    close(fd);
+}
+
+
+public void FileManage(){
+    //printF("filemanage\n");
+    ;
+}
+
+
+public void ListCreate(char[] target, int n){
+    int fd;
+    if(creat("./list_3.csv") != 0){
+        panic("can't create list_file");
+    }
+    if((fd=open("list_3.csv", WRITE_MODE))>=0){ //ファイルが開けたら
+        //printF("listcreate\n");
+        write(fd, "3,4,6,12,15", 11);
+    }
+    close(fd);
+}
+
+public void ListManage(char[] list_file){
+    //printF("listmanage\n");
+    ;
+}

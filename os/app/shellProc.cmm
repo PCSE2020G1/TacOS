@@ -23,17 +23,25 @@
  * shellProc.cmm : MP3 プレーヤのメインプロセス
  *
  * 2020.09.07 : 新規作成
+ * 2020.12.02 長谷川 : 音量調整処理の追加 
+ * 2020.12.03 長谷川 : ListCreateInit()の呼び出しを追加
  *
  * $Id$
  *
  */
 #include <kernel.hmm>
 #include <util.hmm>
+#include <mm.hmm>
 #include "lcd.hmm"
 #include "mp3Proc.hmm"
 #include "spi.hmm"
 #include "mp3Files.hmm"
 #include "shellProc.hmm"
+#include "font.hmm"
+#include "CreateLists.hmm"
+#include "appUtil.hmm"
+#include "Alarm.hmm"
+
 
 //-----------------------------------------------------------------------------
 // スイッチの読み取り
@@ -50,7 +58,8 @@
 int sw0 = 0x00;                                     // 前回の状態(デバウンス前)
 int sw1 = 0x00;                                     // 前回の状態(デバウンス後)
 
-int readSw() {
+
+public int readSw() {
   int sw = ~in(0x18) & SWS;                         // スイッチを読み正論理に変換
   int swd = sw & sw0;                               // デバウンス
   int sw2 = (sw1 ^ swd) & swd;                      // 今回，新たに押されたSW
@@ -59,7 +68,7 @@ int readSw() {
   return sw2;
 }
 
-int swToNum(int sw) {
+public int swToNum(int sw) {
   int num = -1;
   if ((sw & SW6)!=0) {                              // 6 番のスイッチが押された
     num = 6;
@@ -76,53 +85,470 @@ int swToNum(int sw) {
   }
   return num;
 }
-      
+
+
+/*
+//引数の文字列が印刷可能な文字であればtrue, そうでなければfalseを返す
+boolean isName(char[] str){
+  boolean flag = true;
+  for(int id=0; id<strLen(str); id=id+1){ //1文字ずつ走査
+    if(!isPrint(str[id])){
+      //もし印刷可能な文字でないなら、false
+      flag = false;
+      break;
+    }
+  }
+  return flag;
+}
+*/
+
 //-----------------------------------------------------------------------------
 // 画面表示
 //-----------------------------------------------------------------------------
-void demoScreen() {
-  cls();                                            // LCDをクリアする
-  locateXY(0,0); putStr("MP3 Player demo");
-  for (int i=1; i<=5; i=i+1) {                      // スイッチ1〜5に付いて
-    locateXY(2,i+1);
-    putCh(chr(ord('0')+i));                         // スイッチの番号
-    putStr(":");
-    char[] fname = mp3FilesGetName(i);              // 対応するファイル名
-    if (fname!=null) putStr(fname);
-  }
-  locateXY(2,7);
-  putStr("6:stop");                                 // 6番のスイッチ
+
+
+void homeDisplay(){
+  cls();
+  putLineH(0,0,8,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(1,7,9,false);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
+  putLineH(10,0,8,true);
+  locateXY(2,1);
+  putStr("PLAYMODE");
+  locateXY(2,2);
+  putStr("ALARM");
 }
 
-void asta(int y) {
-  demoScreen();
-  locateXY(0, y+1);
-  putCh('*');
+void playmodeDisplay(){
+  //曲名表示部分,シークバーのところ以外を消し去るようにしてる
+  //曲名を表示するところ、どうしようか？
+  //もし再生中の曲名とかのデータを格納する変数があるなら、それを受け取って表示もできそうね
+  cls_block(0,0,1,8);
+  cls_block(0,0,16,6);
+  cls_block(10,5,6,3);
+
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true);
+  putLineH(10,0,8,true);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
+  locateXY(2,1);
+  putStr("Artist");
+  locateXY(2,2);
+  putStr("Album");
+  locateXY(2,3);
+  putStr("Music");
+
+}
+
+
+void playmode_music_Display(int n){
+  char[] display_name = malloc(sizeof(char)*20);
+
+  cls_block(0,0,1,8);
+  cls_block(0,0,16,6);
+  cls_block(10,5,6,3);
+
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true);
+  putLineH(10,0,8,true);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
+
+  for(int i=0; i<3; i=i+1){
+    //3曲分を取り出して画面に曲名を出す
+    strCpy(display_name,index_list[n+i].music_name);
+    //dbgPutStr(display_name);
+    //dbgPutStr("\n");
+    if(display_name[0]!='\0'){ //nullでなく、表示可能な文字列であれば
+      if(strLen(display_name)>=8){ //8文字以上なら
+        //8文字目に'...'を表示する
+        display_name[8] = '\0';
+        locateXY(9,1+i);
+        putCh(chr(0x8a)); //'...'の表示
+      }
+      locateXY(2,1+i);
+      putStr(display_name);
+    }
+  }
+
+  //矢印の表示
+  locateXY(2,4);
+  putCh(chr(0x8c));
+  free(display_name);
+
+}
+
+
+//char[][] artist_array = array(5, INDEX_SIZE);
+int artarr_current = 0; //artist_arrayの現在参照位置を格納する変数
+
+// /playmode/artistを選択した際に表示
+void playmode_artist_Display(char[][] artist_array){
+  //char[] display_name = malloc(sizeof(char)*20);
+
+  // それまでの情報を削除
+  cls_block(0,0,1,8);
+  cls_block(0,0,16,6);
+  cls_block(10,5,6,3);
+
+  //枠線の表示
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(15,0,8,false);
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true);
+  putLineH(10,0,8,true);
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
+
+  int art_num = 0;
+
+  locateXY(2, art_num+1);
+  putStr(artist_array[0]);
+  art_num = art_num + 1;
+  for(int t=0;t<numFile;t=t+1){
+    if(strCmp(index_list[t].art_name, artist_array[0]) == 0){
+      locateXY(2, art_num+1);
+      putStr(index_list[t].music_name);
+      art_num = art_num + 1;
+    }
+  }
+
+  //free(display_name);
+}
+
+
+
+void putCursor(int y){
+  locateXY(1,y);
+    putCh('>');
 }
 
 //-----------------------------------------------------------------------------
 // MP3 プレーヤのメインプロセス
 //-----------------------------------------------------------------------------
 // ここからプロセスの実行が始まる
+
 public void shellMain() {
+  char[] tmp = malloc(sizeof(char)*20);
+  char[] play_path = malloc(sizeof(char)*30);
+  char[][] artist_array = malloc(sizeof(char)*10);
+  for(int i=0;i<10;i=i+1){
+    artist_array[i] = malloc(sizeof(char)*10);
+  }
+
   spiResetLcd();                                    // sleepを使用するので
   spiResetMp3();                                    //   プロセスが実行する
   mp3FilesInit();                                   // ファイル一覧を作る
-  demoScreen();                                     // 画面を初期化
-  for (;;) {
-    int sw = readSw();
-    int num = swToNum(sw);
-    if (num==6) {                                   // 6 番のスイッチが押された
-      dbgPutStr("stop\n");
-      demoScreen();                                 // 画面を初期化
-      stop();
-    } else if (num>0 && mp3FilesGetName(num)!=null) { // ファイルと対応するボタン
-      demoScreen();                                 // 画面を初期化
-      asta(num);                                    // 再生中の曲に印を表示
-      play(mp3FilesGetPath(num));                   // 再生開始
-      dbgPutStr(mp3FilesGetPath(num));
-      dbgPutStr("\n");
+  ListCreateInit();                                 //　インデックスファイルやリストの作成/管理
+  
+  //画面の状態を記録する変数
+  //0:  初期画面
+  //1:  /playmode/
+  //2:  /playmode/artist/
+  //3:  /playmode/album/
+  //4:  /playmode/music/
+  //5:  /alarm/
+  int state = 0;
+  
+  //optionの状態を記録する変数
+  //0:  optionなし
+  //1:  /playmode/artist/option0
+  //2:  /playmode/artist/option1
+  //3:  /playmode/album/option0
+  //4:  /playmode/album/option1
+  //5:  /playmode/music/option0
+  //6:  /playmode/music/option1
+  //int option_state = 0;
+
+  //カーソルの位置を保持する変数
+  //locateXY()で呼び出す座標と同じ。つまり、この値が1のとき初期値
+  int cursor_pos = 1;
+
+  //index_listの現在参照位置を格納する変数
+  //playmode_music_Display()の引数に渡す
+  int index_current = 0;
+
+  homeDisplay();
+  putCursor(cursor_pos);
+  int sw;
+  int num; //スイッチの現在の状態の番号を格納
+  int last_num = 0; //一つ前に読み取ったスイッチの状態の番号を格納
+  for(;;){
+    sw = readSw();
+    num = swToNum(sw);
+    if(state==0){ //初期画面のとき
+      if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+        //カーソルを下に動かす
+        cursor_pos = cursor_pos + 1;
+        locateXY(1,cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==1 && num==3){ //横ボタンが押されたら(playmodeが選択されたら)
+        // /playmodeに移行
+        cursor_pos = 1;
+        state = 1;
+        playmodeDisplay();
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
+        //カーソルを上に動かす
+        cursor_pos = cursor_pos - 1;
+        locateXY(1,cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+
+      else if(cursor_pos==2 && num==3){ //横ボタンが押されたら(alarmが選択されたら)
+        //アラームモードに移行
+        state = 5;
+        boolean alarmflag = alarm();   //ここでアラーム関数を呼ぶ(未実装)
+        if(alarmflag==false){
+          state = 0;
+          homeDisplay();
+        }
+      }
+
     }
-    sleep(10);                                      // 10ms に一度
+
+    else if(state==1){ // /playmode/のとき
+      putCursor(cursor_pos);
+      if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==1 && num==3){ //右ボタンが押されたら(/playmode/artistが選択されたら)
+
+        //FilesSort(3); //アーティスト名の降順でソートする
+
+        artarr_current = 0;
+        for(int m=0; m<numFile; m=m+1){
+          if(strCmp(index_list[m].art_name, artist_array[artarr_current]) != 0){
+            //artist_arrayに入っていないアーティスト名が検出されたら、それを新しく登録する
+            strCpy(artist_array[artarr_current], index_list[m].art_name);
+            artarr_current = artarr_current + 1;
+          }
+        }
+        // /playmode/artist/に遷移
+        state = 2;
+        playmode_artist_Display(artist_array);
+        cursor_pos = 1;
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos); 
+      }
+      else if(cursor_pos==3 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==3 && num==3){ //右ボタンが押されたら(musicモードが選択されたら)
+        //musicモードに遷移
+        state = 4;
+        cursor_pos = 1;
+        FilesSort(1); //index_listを降順にする
+        strCpy(tmp,index_list[0].music_name);
+        if(tmp!=null) playmode_music_Display(index_current);
+        //else{
+        //  dbgPutStr("no music here.");
+        //  dbgPutStr("\n");
+        //}
+
+        putCursor(cursor_pos);
+      }
+      else if(num==2){ //左ボタンが押されたら(戻るボタン)
+        //初期画面に戻す
+        locateXY(1, cursor_pos);
+        putCh(' ');
+        state = 0;
+        cursor_pos = 1;
+        homeDisplay();
+        putCursor(cursor_pos);
+      }
+    }
+
+  else if(state==2){ // /playmode/artist/
+    if(num==2){
+      state = 1;
+      playmodeDisplay();
+    }
   }
+
+    else if(state==4){ // /playmode/music/
+      putCursor(cursor_pos);
+      if(cursor_pos==1 && num==1){ //上ボタンが押されたら
+        //存在していれば、カーソルの更新と前の三曲分の表示
+        if(index_current!= 0){
+          locateXY(1, cursor_pos);
+          putCh(' ');
+          cursor_pos = 4;
+          putCursor(cursor_pos);
+          if(index_list[index_current-3].music_name!=null){
+            index_current = index_current - 3;
+            playmode_music_Display(index_current);
+          }
+        }
+      }
+      else if(cursor_pos==1 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+
+      else if(cursor_pos==1 && num==3){ //まだ長押しは実装してない。今回は試験的に右ボタンで曲の再生、停止をしてみる
+        //再生、停止
+        if(!playFlag){
+          //停止中の場合,再生
+          strCpy(play_path, "");
+          play_path = subCat("./MP3/", index_list[index_current].music_name); //パスの生成
+          //subCat(path, ".mp3"); //パスの生成
+          play(play_path);
+        } else{
+          //再生中の場合、停止
+          stop();
+        }
+      }
+
+      else if(cursor_pos==2 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==2 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+
+      else if(cursor_pos==2 && num==3){ //まだ長押しは実装してない。今回は試験的に右ボタンで曲の再生、停止をしてみる
+        //再生、停止
+        if(!playFlag){
+          //停止中の場合,再生
+          strCpy(play_path, "");
+          play_path = subCat("./MP3/", index_list[index_current+1].music_name); //パスの生成
+          //subCat(path, ".mp3"); //パスの生成
+          play(play_path);
+        } else{
+          //再生中の場合、停止
+          stop();
+        }
+      }
+
+      else if(cursor_pos==3 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+      else if(cursor_pos==3 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos + 1;
+        locateXY(1, cursor_pos-1);
+        putCh(' ');
+        putCursor(cursor_pos);
+      }
+
+      else if(cursor_pos==3 && num==3){ //まだ長押しは実装してない。今回は試験的に右ボタンで曲の再生、停止をしてみる
+        //再生、停止
+        if(!playFlag){
+          //停止中の場合,再生
+          strCpy(play_path, "");
+          play_path = subCat("./MP3/", index_list[index_current+2].music_name); //パスの生成
+          //subCat(path, ".mp3"); //パスの生成
+          play(play_path);
+        } else{
+          //再生中の場合、停止
+          stop();
+        }
+      }
+
+      else if(cursor_pos==4 && num==1){ //上ボタンが押されたら
+        //カーソル位置の更新
+        cursor_pos = cursor_pos - 1;
+        locateXY(1, cursor_pos+1);
+        putCh(' ');
+        putCursor(cursor_pos); 
+      }
+      else if(cursor_pos==4 && num==5){ //下ボタンが押されたら
+        //カーソル位置の更新と、次の三曲分の表示
+        locateXY(1, cursor_pos);
+        putCh(' ');
+        cursor_pos = 1;
+        putCursor(cursor_pos);
+        if(index_list[index_current+3].music_name!=null){
+          index_current = index_current + 3;
+          playmode_music_Display(index_current);
+        }
+      }
+      else if(num==2){ //戻るボタンが押されたら
+        //playmodeの画面に戻る
+        index_current = 0;
+        locateXY(1, cursor_pos);
+        putCh(' ');
+        state = 1;
+        cursor_pos = 1;
+        playmodeDisplay();
+        putCursor(cursor_pos);
+      }
+    }
+
+    if(num==4){
+      //音量上げる
+      if(valume+0x0404 < 0x6060){    
+          valume = valume + 0x0404; //音量を上げる
+          spiWriteMp3Reg(0x0b, 0x6060-valume);
+      }
+    }
+    else if(num==6){
+      //音量下げる
+      if(valume-0x0404 > 0x0000){    
+          valume = valume - 0x0404; //音量を下げる
+          spiWriteMp3Reg(0x0b, 0x6060-valume);
+      }
+    }
+
+    sleep(10);
+    last_num = num;
+  }
+  for(int i=0;i<10;i=i+1){
+    free(artist_array[i]);
+  }
+  free(artist_array);
+  free(tmp);
+  free(play_path);
 }

@@ -19,13 +19,5 @@
  *
  */
 
-/*
- * shellProc.hmm : MP3 プレーヤのメインプロセス
- *
- * 2020.09.07 : 新規作成
- *
- */
-
-public void shellMain();
-public int readSw();
-public int swToNum(int sw);
+public boolean alarm();
+public void down_timer();

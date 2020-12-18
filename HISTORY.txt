@@ -1,4 +1,13 @@
 変更履歴
+2020.11.21         : i14simizu font.cmmの記号を追加
+2020.11.19         : i14simizu lcd.cmmのFilesSort()で、構造体をいじってソートする部分までできた
+2020.11.18         : i14simizu lcd.cmmのdeleteStr()関数追記、FilesSort()関数追記中
+2020.11.01         : i14simizu lcd.cmmのcls_block()を実装
+2020.10.31         : i14simizu font.cmm実装完了、未デバッグ(画面上にうまく表示されるか不安) & lcd.cmmのcls_blockは必要？
+2020.10.30         : i14simizu lcd.cmmにてputLineW()とputLineH()を実装完了、未デバッグ
+2020.10.28         : i14simizu test & lcdに少し変更
+
+2020.10.14         : 総合実験で使用開始
 2020.09.10  v3.3.0 : 組込カーネルも作成可能になった(appホルダに組込アプリ)
 2020.08.15         : sleep()をpmからkernelに移動
 2020.07.15  v3.2.2 : バグの修正と ls コマンドの改良

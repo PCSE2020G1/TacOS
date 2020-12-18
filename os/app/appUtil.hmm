@@ -46,3 +46,4 @@ public Dir readDir(int fd, char[] ext);
 public char[] strCat(char[] dst, char[] src);
 public int strCmp(char[] s1, char[] s2);
 public int strNcmp(char[] s1, char[] s2, int n);
+public int printf(char[] format, ...);

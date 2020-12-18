@@ -36,6 +36,7 @@
 
 // ハードウェアを排他使用するためのセマホ
 int spiSem;
+public int valume = 0x2020;
 
 // 初期化（プロセス起動前の初期化）
 public void spiInit() {
@@ -50,6 +51,7 @@ public void spiInit() {
    while(BUSY){};          \
    out(0x20, v);           \
 }
+//20h : 8bitのデータを読み書きする。データが書き込まれるとデータが1bitずつSOに出力され、同時にSIからデータが1bitずつシフトレジスタに読み込まれる。
 
 // LCD に連続したコマンドを送る
 void writeLcdCom(char[] com) {
@@ -75,8 +77,9 @@ public void spiWriteLcdDat(char[] dat, int len) {
   semP(spiSem);
   char[] d = dat;
   int    l = len;
-  out(0x18, 0xec);                      // A0='1', xCS='0', clk='0'
-  out(0x22, 0x01);                      // SPI クロックを 12.288MHz にする
+  //out(int p, int v):I/O空間のp番地にv(16bit)を送る
+  out(0x18, 0xec);                      // A0='1', xCS='0', clk='0'  , 18h:I/O出力ポートの07~00の8bitに出力する値を決定する , LCD-RST=1, (VS-RST=1), LCD-A0=1(when 1, D0~D7 are display data), LCD-CS=0, (VS-DCS=1, VS-CS=1)
+  out(0x22, 0x01);                      // SPI クロックを 12.288MHz にする , 22h:SPIのSCLKの周波数を決める、SCLK周波数は96kHz~24.576MHz , SCLK = 24.576/(N+1) [MHz]
   for (int i=0; i<l; i=i+1) {
     writeByte(ord(d[i]));
   }
@@ -169,7 +172,7 @@ public void spiResetMp3() {
   writeMp3Reg(0x00, 0x0800);           // mode <- NEW mode
   writeMp3Reg(0x03, 0x30d4);           // clock adjust <- 25MHz
   sleep(1);
-  writeMp3Reg(0x0b, 0x2020);           // volume set to (-16dB, -16dB)
+  writeMp3Reg(0x0b, 0x6060-valume);           // volume set to (-16dB, -16dB)
   sleep(1);
   semV(spiSem);
 }

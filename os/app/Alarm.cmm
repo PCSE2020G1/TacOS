@@ -1,0 +1,315 @@
+/*
+ * TacOS Source Code
+ *    Tokuyama kousen Advanced educational Computer.
+ *
+ * Copyright (C) 2020 by
+ *                      Dept. of Computer Science and Electronic Engineering,
+ *                      Tokuyama College of Technology, JAPAN
+ *
+ *   上記著作権者は，Free Software Foundation によって公開されている GNU 一般公
+ * 衆利用許諾契約書バージョン２に記述されている条件を満たす場合に限り，本ソース
+ * コード(本ソースコードを改変したものを含む．以下同様)を使用・複製・改変・再配
+ * 布することを無償で許諾する．
+ *
+ *   本ソースコードは＊全くの無保証＊で提供されるものである。上記著作権者および
+ * 関連機関・個人は本ソースコードに関して，その適用可能性も含めて，いかなる保証
+ * も行わない．また，本ソースコードの利用により直接的または間接的に生じたいかな
+ * る損害に関しても，その責任を負わない．
+ *
+ *
+ */
+
+/*
+ * mp3Proc.cmm : MP3 デコーダのドライバ
+ *
+ * 2020.08.30 : 新規作成
+ *
+ * $Id$
+ *
+ */
+
+#include <util.hmm>
+#include <kernel.hmm>
+#include <fs.hmm>
+#include <mm.hmm>
+#include "spi.hmm"
+#include "lcd.hmm"
+#include "shellProc.hmm"
+#include "mp3Proc.hmm"
+#include "mp3Files.hmm"
+
+
+// レスポンス
+#define OK  0
+#define ERR 1
+#define N 25
+#define M 30
+
+int alarmtime;                              //カウントダウンする時間を持つ
+/*
+char[] fullname = array(N);
+char[] filename1 = array(N);
+char[] filename2 = array(N);
+char[] filename3 = array(N);
+*/
+char[] music_path = array(M);
+int minute = 0;
+int second = 0;
+int countdown = 0;
+boolean Hdr = false;
+boolean set = false;              //0=minute,1=second
+boolean music = false;            //0=無音,1=有音
+boolean alarmflag = false;
+//アラーム機能がオンになっているか．戻り値0でアラーム実行,戻り値1で何かしらの理由でアラームが解除されたこと示す
+
+
+public void timelcd(){
+  cls_block(3,3,5,1);
+  locateXY(3,3);
+  putDec(minute,2);
+  locateXY(5,3);
+  putCh(':');
+  locateXY(6,3);
+  putDec(second,2);
+  if(set==false){
+    cls_block(4,4,5,1);
+    locateXY(4,4);
+    putCh('^');
+  }
+  else if(set==true){
+    cls_block(4,4,5,1);
+    locateXY(7,4);
+    putCh('^');
+  }
+}
+
+
+interrupt timerHdr(){       //タイマー割り込みハンドラ
+  countdown = countdown - 1;
+  in(0x06);
+  Hdr=true;
+}
+
+//タイマー
+public void down_timer(){      //カウントダウン用の画面が必要
+  timelcd();
+  countdown = minute * 60 + second;
+  countdown = countdown * 10;            //0.1sを10周で1sにするための10*
+
+  int[] vect = _ItoA(0xffe0);    //vectは割り込みベクタの配列
+  vect[1] = addrof(timerHdr);    //vect[1]はタイマー割り込みのベクタ
+  out(0x0004,100);                //0.1sの周期設定
+  out(0x0006,0x8001);                //割り込み許可
+  for(;;){
+    if(countdown==0){
+      second = 0;
+      timelcd();
+      out(0x06,0x00);
+      break;
+    }
+    else if(Hdr==true && countdown%10==0){
+      if(minute!=0 && second<=0){
+        minute=minute-1;
+        second=59;
+      }
+      else{
+        second=second-1;
+      }
+      timelcd();
+      Hdr=false;
+    }
+  }
+}
+
+public void configtime(){    //時間入力画面をlcdへ
+  cls();
+  putLineH(0,0,6,false);
+  putLineH(0,15,6,false);
+  putLineW(0,1,14,false);
+  putLineW(5,1,14,false);
+  locateXY(1,1);
+  putStr("config time");
+  locateXY(3,3);
+  putDec(minute,2);
+  locateXY(5,3);
+  putCh(':');
+  locateXY(6,3);
+  putDec(second,2);
+  locateXY(9,3);
+  putStr("SET");
+  cls_block(4,4,5,1);
+  locateXY(4,4);
+  putCh('^');
+
+  for(;;){                   //false=minute/true=second
+    int sw = readSw();
+    int num = swToNum(sw);   //押されたボタン
+    if(set==false && num==1 ){    //上なら
+      if(minute==59){
+        minute=59;
+        timelcd();
+      }
+      else{
+        minute=minute+1;
+        timelcd();
+      }
+    }
+    else if(set==false && num==5 ){  //下なら
+      if(minute==0){
+        minute=0;
+        timelcd();
+      }
+      else{
+        minute=minute-1;
+        timelcd();
+      }
+    }
+    else if(set==true && num==1 ){   //上なら
+      if(second==59){
+        minute=minute+1;
+        second=0;
+        timelcd();
+      }
+      else{
+        second=second+1;
+        timelcd();
+      }
+    }
+    else if(set==true && num==5 ){   //下なら
+      if(second==0){
+        second=0;
+        timelcd();
+      }
+      else{
+        second=second-1;
+        timelcd();
+      }
+    }
+    else if(set==false && num==3 ){   //min右
+      set=true;
+      timelcd();
+    }
+    else if(set==true && num==2 ){   //sec左
+      set=false;
+      timelcd();
+    }
+    else if(set==true && num==6 ){   //sec右
+      break;                  //時間確定
+    }
+  }
+}
+
+// ここからプロセスの実行が始まる
+public boolean alarm(){
+  alarmflag = true;
+  cls();//画面枠の作成↓
+  putLineW(1,0,9,false);
+  putLineW(0,5,10,true); //二重線
+  putLineW(11,0,4,false);
+  putLineW(11,7,4,false);
+  putLineH(0,0,5,false);
+  putLineH(0,6,2,false);
+  putLineH(10,0,8,true);
+  //putLineH(11,0,8);
+  locateXY(2,4);
+  putCh(chr(0x8c));     //下向きの矢印
+  locateXY(1,6);
+  putStr("-select");
+  locateXY(4,7);
+  putStr("track-");
+
+//曲名リストをlcdへ
+  int i=0;
+  char[] filename1 = malloc(sizeof(char)*N);
+  char[] filename2 = malloc(sizeof(char)*N);
+  char[] filename3 = malloc(sizeof(char)*N);
+  char[] fullname = malloc(sizeof(char)*N);
+  char[] music_path = malloc(sizeof(char)*M);
+  FilesSort(1);       //mode1
+  for(;;){    //alarmflag=trueの時永遠に回る
+    int sw = readSw();
+    int num = swToNum(sw);   //押されたボタン
+
+    if(i!=numFile && num==5 ){               //下ボタン
+      i=i+1;
+    }
+    else if(i!=0 && num==1){           //上ボタン
+      i=i-1;
+    }
+    else if(num==3){              //曲を選択したら
+      configtime();         //----------------------時間指定
+      down_timer();         //----------------------カウントダウン
+      break;
+    }
+
+    strCpy(filename1,index_list[i].music_name);
+    strCpy(fullname,index_list[i].music_name);
+    locateXY(1,1);
+    putCh('>');
+    if(filename1!=null){         //曲名が存在するか
+      cls_block(2,1,8,1);
+      locateXY(2,1);
+      if(strLen(filename1)<=8){  //文字数*2で返ってくる
+        putStr(filename1);
+      }
+      else{
+        locateXY(9,1);
+        putCh(chr(0x8a));
+        filename1[7]='\0';
+        locateXY(2,1);
+        putStr(filename1);
+      }
+    }
+    strCpy(filename2,index_list[i+1].music_name);
+    if(filename2!=null){
+    cls_block(2,2,8,1);
+      locateXY(2,2);
+      if(strLen(filename2)<=8){  //文字数*2で返ってくる
+        putStr(filename2);
+      }
+      else{
+        locateXY(9,2);
+        putCh(chr(0x8a));
+        filename2[7]='\0';
+        locateXY(2,2);
+        putStr(filename2);
+      }
+    }
+    strCpy(filename3,index_list[i+2].music_name);
+    if(filename3!=null){
+    cls_block(2,3,8,1);
+      locateXY(2,3);
+      if(strLen(filename3)<=8){  //文字数*2で返ってくる
+        putStr(filename3);
+      }
+      else{
+        locateXY(9,2);
+        putCh(chr(0x8a));
+        filename3[7]='\0';
+        locateXY(2,3);
+        putStr(filename3);
+      }
+    }
+  }
+  music_path = subCat("./MP3/",fullname);
+  for(;;){      //鳴ってる
+    int sw = readSw();
+    int num = swToNum(sw);   //押されたボタン
+    if(playFlag==true && num==5){
+      stop();
+      music=false;
+      alarmflag = false;
+      break;
+    } else if(playFlag==false) {
+      music=true;
+      play(music_path);
+    }
+    sleep(10);
+  }
+  free(fullname);
+  free(filename1);
+  free(filename2);
+  free(filename3);
+  //free(music_path);
+  return false;
+}
